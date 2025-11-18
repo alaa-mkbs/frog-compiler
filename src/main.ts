@@ -1,8 +1,12 @@
 import Lexer from './Lexer.js';
-import Parser from './parser.js';
+import Parser from './Parser.js';
+import Semantic from './Semantic.js';
+import type { Parse, Token } from './Tokens.js';
 
 class Ui {
-  private code: string = "";
+  private code: string = '';
+  private tokens: Token[];
+  private parsers: Parse[];
 
   private fileCode: HTMLInputElement | null;
   private filePath: HTMLInputElement | null;
@@ -19,7 +23,9 @@ class Ui {
   private resultField: HTMLTextAreaElement | null;
 
   constructor() {
-    this.code = "";
+    this.code = '';
+    this.tokens = [];
+    this.parsers = [];
 
     this.fileCode = document.querySelector('#fileUploaded');
     this.filePath = document.querySelector('#filePath');
@@ -35,7 +41,7 @@ class Ui {
     this.analyserField = document.querySelector('#codeAfterAnalyze');
     this.resultField = document.querySelector('#codeResult');
 
-    this.analyzerHandler();
+    this.lexerHandler();
     this.FileUploadedHandler();
     this.btnsHandler();
   }
@@ -62,35 +68,79 @@ class Ui {
     });
   }
 
-  clearHandler():void {
-    if(this.code) this.code = "";
-    if(this.fileCode) this.fileCode.value = "";
-    if(this.filePath) this.filePath.textContent = "";
-    if(this.codeField) this.codeField.value = "";
-    if(this.analyserField) this.analyserField.value = "";
-    if(this.resultField) this.resultField.value = "";
+  clearHandler(): void {
+    if (this.code) this.code = '';
+    if (this.fileCode) this.fileCode.value = '';
+    if (this.filePath) this.filePath.textContent = '';
+    if (this.codeField) this.codeField.value = '';
+    if (this.analyserField) this.analyserField.value = '';
+    if (this.resultField) this.resultField.value = '';
 
-    const activeClassName = document.querySelectorAll(".active");
+    console.clear();
+
+    const activeClassName = document.querySelectorAll('.active');
 
     activeClassName?.forEach((el) => {
-      el.classList.remove("active");
-    })
+      el.classList.remove('active');
+    });
   }
 
-  analyzerHandler():void {
-      if(!this.codeField?.value) return;
-      else this.code = this.codeField.value;
+  lexerHandler(): void {
+    if (!this.codeField?.value) return;
+    else this.code = this.codeField.value;
 
     const lex = new Lexer(this.code);
-    const tokens = lex.readFile();
-    if (this.analyserField) this.analyserField.value = lex.getLexResult();
-    if(this.lexBtn) this.lexBtn.classList.add("active");
-    const prs = new Parser(tokens);
+    this.tokens = lex.readFile();
+
+    if (this.tokens) {
+      if (this.analyserField) this.analyserField.innerHTML = lex.getLexResult();
+      if (this.lexBtn) {
+        this.btnsRemoveActive();
+        this.lexBtn.classList.add('active');
+      }
+    }
+  }
+
+  parserHandler(): void {
+    if (!this.codeField?.value) return;
+    else this.code = this.codeField.value;
+
+    const lex = new Lexer(this.code);
+    this.tokens = lex.readFile();
+
+    if (this.tokens) {
+      const prs = new Parser(this.tokens);
+      this.parsers = prs.parseInput();
+      if(this.parsers) {
+      if (this.analyserField) this.analyserField.innerHTML = prs.getParseResult(this.parsers);
+      if (this.synBtn) {
+        this.btnsRemoveActive();
+        this.synBtn.classList.add('active');
+
+        // const sem = new Semantic(this.parsers);
+      }
+      }
+
+    }
+  }
+
+  btnsRemoveActive() {
+    this.lexBtn?.classList.remove('active');
+    this.synBtn?.classList.remove('active');
+    this.semBtn?.classList.remove('active');
   }
 
   btnsHandler() {
-    this.clearBtn?.addEventListener("click", () => this.clearHandler());
-    this.compileBtn?.addEventListener("click", () => {this.analyzerHandler();});
+    this.clearBtn?.addEventListener('click', () => this.clearHandler());
+    this.compileBtn?.addEventListener('click', () => {
+      this.lexerHandler();
+    });
+    this.lexBtn?.addEventListener('click', () => {
+      this.lexerHandler();
+    });
+    this.synBtn?.addEventListener('click', () => {
+      this.parserHandler();
+    });
   }
 }
 

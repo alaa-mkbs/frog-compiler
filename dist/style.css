@@ -20,9 +20,10 @@ body {
 
 
 
-textarea {
+.code-uploaded,
+.output,
+.code-result {
     width: 100%;
-    min-height: 20rem;
     border: 2px solid var(--border-color);
     border-radius: .5rem;
     resize: none;
@@ -32,16 +33,26 @@ textarea {
     outline: none;
     padding: .5rem;
     font-family: "JetBrains Mono", monospace;
-
-    &:last-of-type {
-        min-height: auto;
-        height: 100%;
-    }
+    overflow-y: auto;
+    white-space: break-spaces;
+    overflow: auto;
 
     &:focus {
         border: 2px solid var(--main-color);
     }
 }
+
+.code-uploaded,
+.output {
+    min-height: 20rem;
+    height: 20rem;
+}
+
+.code-result {
+    height: 6rem;
+}
+
+
 
 .container {
     width: 100%;
@@ -71,6 +82,7 @@ textarea {
     gap: 1rem;
     height: 100%;
 }
+
 .footer {
     gap: .5rem;
 }
@@ -194,4 +206,10 @@ textarea {
         border: none;
         padding: .5rem;
     }
+}
+
+
+
+.error {
+    color: red;
 }

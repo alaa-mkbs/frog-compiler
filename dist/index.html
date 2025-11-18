@@ -31,20 +31,11 @@
                 <button id="seAnalyser">semantic analyser</button>
             </article>
             <article class="show-code">
-                <textarea id="codeUploaded" spellcheck="false">
+                <textarea id="codeUploaded" class="code-uploaded" spellcheck="false">
+FRG_Begin
 FRG_Int i, j, x1, x2 #
 FRG_Real x3 #
 i:=30 #
-i:=30 #
-i:=30 #
-i:=30 + 10 #
-i:=30 + 30 #
-i:=30  + i#
-x:=x  + i#
-
-
-FRG_Int i, j, x1, x2 #
-FRG_Real x3 #
 If [ i<=20]
 x1:=10 #
 Else
@@ -61,8 +52,8 @@ Repeat
 until [ i <= 15]
 FRG_End
                 </textarea>
-                <textarea id="codeAfterAnalyze" spellcheck="false" readonly>
-                </textarea>
+                <pre class="output" id="codeAfterAnalyze" spellcheck="false" readonly>
+                </pre>
             </article>
             <div class="actions">
                 <button id="clear" class="clear-btn">clear</button>
@@ -71,13 +62,19 @@ FRG_End
         </main>
         <footer class="footer">
             <h2 class="result-title">result</h2>
-            <textarea id="codeResult" spellcheck="false" readonly>
+            <pre id="codeResult" class="code-result" spellcheck="false" readonly>
 30, 120
 Hello :) 
 25
 20
 15
-            </textarea>
+15
+15
+15
+15
+15
+15
+            </pre>
         </footer>
     </div>
 </body>

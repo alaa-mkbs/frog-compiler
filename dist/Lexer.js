@@ -52,15 +52,20 @@ class Lexer {
         throw new Error(`Invalid number '${value}' at position ${this.p}`);
     }
     getString() {
+        let value = this.currentChar;
         this.nextChar();
-        let value = '';
         while (this.currentChar !== '"' && this.currentChar !== '\0' && this.currentChar !== '\n') {
             value += this.currentChar;
             this.nextChar();
         }
-        if (this.currentChar === '"')
+        if (this.currentChar === '"') {
+            value += this.currentChar;
             this.nextChar();
-        return { type: TokenType.STRING, value };
+            return { type: TokenType.STRING, value };
+        }
+        else {
+            return { type: TokenType.ERROR, value: value, errorMsg: 'Invalid string' };
+        }
     }
     getKeyword() {
         let value = '';
@@ -77,6 +82,7 @@ class Lexer {
             Else: TokenType.ELSE,
             FRG_Int: TokenType.INT,
             FRG_Real: TokenType.REEL,
+            FRG_Print: TokenType.PRINT,
             Repeat: TokenType.REPEAT,
             until: TokenType.UNTIL,
         };
@@ -98,7 +104,7 @@ class Lexer {
         if (this.currentChar === ':' && this.code[this.p + 1] === '=') {
             this.nextChar();
             this.nextChar();
-            return { type: TokenType.EQUAL, value: ':=' };
+            return { type: TokenType.ASSIGN, value: ':=' };
         }
         if (this.currentChar === '<' && this.code[this.p + 1] === '=') {
             this.nextChar();
@@ -171,11 +177,10 @@ class Lexer {
     setTokensDesc(tokens) {
         tokens.forEach((tok) => {
             if (tok.type !== TokenType.ENDFILE && tok.type !== TokenType.FINISHLINE) {
-                if (tok.type === TokenType.ERROR) {
-                    this.lexResult += `${tok.value}: ${tok.errorMsg}\n`;
-                    return;
-                }
-                this.lexResult += `${tok.value}: ${TokenDesc[tok.type]}\n`;
+                if (tok.errorMsg)
+                    this.lexResult += `<span class="error">${tok.value}: ${tok.errorMsg}</span>\n`;
+                else
+                    this.lexResult += `${tok.value}: ${TokenDesc[tok.type]}\n`;
             }
         });
     }

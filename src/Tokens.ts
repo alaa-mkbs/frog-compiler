@@ -18,9 +18,12 @@ enum TokenType {
   STRING = 'STRING', // "Hello :)"
   INT = 'INT', // FRG_Int
   REEL = 'REEL', // FRG_Real
+  PRINT = 'PRINT', // FRG_Print
 
+  QUOT = 'QUOT', // ""
   COMM = 'COMM', // ,
-  EQUAL = 'EQUAL', // :=
+  EQUAL = 'EQUAL', // =
+  ASSIGN = 'ASSIGN', // :=
   LESSTHEN = 'LESSTHEN', // < 
   LESSEQ = 'LESSEQ', // <=
   GREATERTHEN = 'GREATERTHEN', // >
@@ -60,6 +63,7 @@ export const TokenDesc: { [key: string]: string } = {
 
   [TokenType.INT]: 'keyword for integer type declaration',
   [TokenType.REEL]: 'keyword for real type declaration',
+  [TokenType.PRINT]: 'keyword for print',
 
   [TokenType.COMM]: 'comma separator',
   [TokenType.EQUAL]: 'assignment operator',
@@ -89,7 +93,8 @@ interface Token {
 
 interface Parse {
   exp: string,
-  desc: string
+  desc: string,
+  error: boolean
 }
 
 

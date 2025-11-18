@@ -17,8 +17,11 @@ var TokenType;
     TokenType["STRING"] = "STRING";
     TokenType["INT"] = "INT";
     TokenType["REEL"] = "REEL";
+    TokenType["PRINT"] = "PRINT";
+    TokenType["QUOT"] = "QUOT";
     TokenType["COMM"] = "COMM";
     TokenType["EQUAL"] = "EQUAL";
+    TokenType["ASSIGN"] = "ASSIGN";
     TokenType["LESSTHEN"] = "LESSTHEN";
     TokenType["LESSEQ"] = "LESSEQ";
     TokenType["GREATERTHEN"] = "GREATERTHEN";
@@ -49,6 +52,7 @@ export const TokenDesc = {
     [TokenType.STRING]: 'string literal',
     [TokenType.INT]: 'keyword for integer type declaration',
     [TokenType.REEL]: 'keyword for real type declaration',
+    [TokenType.PRINT]: 'keyword for print',
     [TokenType.COMM]: 'comma separator',
     [TokenType.EQUAL]: 'assignment operator',
     [TokenType.LESSTHEN]: 'comparison operator',

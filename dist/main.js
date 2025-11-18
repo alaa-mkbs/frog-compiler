@@ -1,9 +1,12 @@
 import Lexer from './Lexer.js';
-import Parser from './parser.js';
+import Parser from './Parser.js';
+import Semantic from './Semantic.js';
 class Ui {
     constructor() {
-        this.code = "";
-        this.code = "";
+        this.code = '';
+        this.code = '';
+        this.tokens = [];
+        this.parsers = [];
         this.fileCode = document.querySelector('#fileUploaded');
         this.filePath = document.querySelector('#filePath');
         this.lexBtn = document.querySelector('#lxAnalyser');
@@ -14,7 +17,7 @@ class Ui {
         this.codeField = document.querySelector('#codeUploaded');
         this.analyserField = document.querySelector('#codeAfterAnalyze');
         this.resultField = document.querySelector('#codeResult');
-        this.analyzerHandler();
+        this.lexerHandler();
         this.FileUploadedHandler();
         this.btnsHandler();
     }
@@ -43,40 +46,80 @@ class Ui {
     }
     clearHandler() {
         if (this.code)
-            this.code = "";
+            this.code = '';
         if (this.fileCode)
-            this.fileCode.value = "";
+            this.fileCode.value = '';
         if (this.filePath)
-            this.filePath.textContent = "";
+            this.filePath.textContent = '';
         if (this.codeField)
-            this.codeField.value = "";
+            this.codeField.value = '';
         if (this.analyserField)
-            this.analyserField.value = "";
+            this.analyserField.value = '';
         if (this.resultField)
-            this.resultField.value = "";
-        const activeClassName = document.querySelectorAll(".active");
+            this.resultField.value = '';
+        console.clear();
+        const activeClassName = document.querySelectorAll('.active');
         activeClassName === null || activeClassName === void 0 ? void 0 : activeClassName.forEach((el) => {
-            el.classList.remove("active");
+            el.classList.remove('active');
         });
     }
-    analyzerHandler() {
+    lexerHandler() {
         var _a;
         if (!((_a = this.codeField) === null || _a === void 0 ? void 0 : _a.value))
             return;
         else
             this.code = this.codeField.value;
         const lex = new Lexer(this.code);
-        const tokens = lex.readFile();
-        if (this.analyserField)
-            this.analyserField.value = lex.getLexResult();
-        if (this.lexBtn)
-            this.lexBtn.classList.add("active");
-        const prs = new Parser(tokens);
+        this.tokens = lex.readFile();
+        if (this.tokens) {
+            if (this.analyserField)
+                this.analyserField.innerHTML = lex.getLexResult();
+            if (this.lexBtn) {
+                this.btnsRemoveActive();
+                this.lexBtn.classList.add('active');
+            }
+        }
+    }
+    parserHandler() {
+        var _a;
+        if (!((_a = this.codeField) === null || _a === void 0 ? void 0 : _a.value))
+            return;
+        else
+            this.code = this.codeField.value;
+        const lex = new Lexer(this.code);
+        this.tokens = lex.readFile();
+        if (this.tokens) {
+            const prs = new Parser(this.tokens);
+            this.parsers = prs.parseInput();
+            if (this.parsers) {
+                if (this.analyserField)
+                    this.analyserField.innerHTML = prs.getParseResult(this.parsers);
+                if (this.synBtn) {
+                    this.btnsRemoveActive();
+                    this.synBtn.classList.add('active');
+                    // const sem = new Semantic(this.parsers);
+                }
+            }
+        }
+    }
+    btnsRemoveActive() {
+        var _a, _b, _c;
+        (_a = this.lexBtn) === null || _a === void 0 ? void 0 : _a.classList.remove('active');
+        (_b = this.synBtn) === null || _b === void 0 ? void 0 : _b.classList.remove('active');
+        (_c = this.semBtn) === null || _c === void 0 ? void 0 : _c.classList.remove('active');
     }
     btnsHandler() {
-        var _a, _b;
-        (_a = this.clearBtn) === null || _a === void 0 ? void 0 : _a.addEventListener("click", () => this.clearHandler());
-        (_b = this.compileBtn) === null || _b === void 0 ? void 0 : _b.addEventListener("click", () => { this.analyzerHandler(); });
+        var _a, _b, _c, _d;
+        (_a = this.clearBtn) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => this.clearHandler());
+        (_b = this.compileBtn) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
+            this.lexerHandler();
+        });
+        (_c = this.lexBtn) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
+            this.lexerHandler();
+        });
+        (_d = this.synBtn) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
+            this.parserHandler();
+        });
     }
 }
 new Ui();

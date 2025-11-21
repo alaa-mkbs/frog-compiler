@@ -7,6 +7,7 @@ class Ui {
   private code: string = '';
   private tokens: Token[];
   private parsers: Parse[];
+  private errors: string;
 
   private fileCode: HTMLInputElement | null;
   private filePath: HTMLInputElement | null;
@@ -26,6 +27,7 @@ class Ui {
     this.code = '';
     this.tokens = [];
     this.parsers = [];
+    this.errors = '';
 
     this.fileCode = document.querySelector('#fileUploaded');
     this.filePath = document.querySelector('#filePath');
@@ -60,6 +62,7 @@ class Ui {
               this.clearHandler();
               this.codeField.value = fileContent;
               this.code = this.codeField.value;
+              this.lexerHandler();
             }
           };
           reader.readAsText(selectedFile);
@@ -73,8 +76,11 @@ class Ui {
     if (this.fileCode) this.fileCode.value = '';
     if (this.filePath) this.filePath.textContent = '';
     if (this.codeField) this.codeField.value = '';
-    if (this.analyserField) this.analyserField.value = '';
-    if (this.resultField) this.resultField.value = '';
+    if (this.analyserField) this.analyserField.innerHTML = '';
+    if (this.resultField) this.resultField.innerHTML = '';
+    if (this.tokens) this.tokens = [];
+    if (this.parsers) this.parsers = [];
+    if (this.errors) this.errors = '';
 
     console.clear();
 
@@ -102,26 +108,38 @@ class Ui {
   }
 
   parserHandler(): void {
-    if (!this.codeField?.value) return;
-    else this.code = this.codeField.value;
-
-    const lex = new Lexer(this.code);
-    this.tokens = lex.readFile();
-
-    if (this.tokens) {
-      const prs = new Parser(this.tokens);
-      this.parsers = prs.parseInput();
-      if(this.parsers) {
+    const prs = new Parser(this.tokens);
+    this.parsers = prs.parseInput();
+    if (this.parsers) {
       if (this.analyserField) this.analyserField.innerHTML = prs.getParseResult(this.parsers);
       if (this.synBtn) {
         this.btnsRemoveActive();
         this.synBtn.classList.add('active');
-
-        // const sem = new Semantic(this.parsers);
       }
-      }
-
     }
+  }
+
+  semanticsHandler(): void {
+    const thereAreAError = this.tokens.some((item) => item.errorMsg) || this.parsers.some((item) => item.error);
+    if (this.tokens.length === 0 || this.parsers.length === 0 || thereAreAError) return;
+    const sem = new Semantic(this.parsers);
+    sem.analyze();
+    this.errors = sem.getErrors();
+    if (this.errors) {
+      if (this.analyserField) this.analyserField.innerHTML = this.errors;
+    } else {
+      if (this.analyserField) this.analyserField.innerHTML = `<p >No errors found</p>`;
+      if (this.resultField) this.resultField.innerHTML = sem.getOutput();
+    }
+    if (this.semBtn) {
+      this.btnsRemoveActive();
+      this.semBtn.classList.add('active');
+    }
+  }
+
+  resultHandler() {
+    const lex = new Lexer(this.code);
+    this.tokens = lex.readFile();
   }
 
   btnsRemoveActive() {
@@ -133,13 +151,24 @@ class Ui {
   btnsHandler() {
     this.clearBtn?.addEventListener('click', () => this.clearHandler());
     this.compileBtn?.addEventListener('click', () => {
+      this.tokens = [];
+      this.parsers = [];
+      this.errors = '';
+      if(this.resultField) this.resultField.innerHTML = 'click on semantic analyser to see the result';
       this.lexerHandler();
     });
     this.lexBtn?.addEventListener('click', () => {
+      if(!this.codeField?.value) return;
       this.lexerHandler();
     });
     this.synBtn?.addEventListener('click', () => {
+      if(!this.codeField?.value) return;
+      if(!this.tokens.length) return;
       this.parserHandler();
+    });
+    this.semBtn?.addEventListener('click', () => {
+      if(!this.codeField?.value) return;
+      this.semanticsHandler();
     });
   }
 }

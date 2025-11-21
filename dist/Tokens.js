@@ -54,7 +54,8 @@ export const TokenDesc = {
     [TokenType.REEL]: 'keyword for real type declaration',
     [TokenType.PRINT]: 'keyword for print',
     [TokenType.COMM]: 'comma separator',
-    [TokenType.EQUAL]: 'assignment operator',
+    [TokenType.EQUAL]: 'equal operator',
+    [TokenType.ASSIGN]: 'assignment operator',
     [TokenType.LESSTHEN]: 'comparison operator',
     [TokenType.LESSEQ]: 'comparison operator',
     [TokenType.GREATERTHEN]: 'comparison operator',
@@ -65,6 +66,6 @@ export const TokenDesc = {
     [TokenType.DIVISION]: 'division operator',
     [TokenType.FINISHLINE]: 'end of line',
     [TokenType.ENDFILE]: 'end of file',
-    [TokenType.ERROR]: 'invalid'
+    [TokenType.ERROR]: 'invalid',
 };
 export { TokenType };

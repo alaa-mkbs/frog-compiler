@@ -4,6 +4,7 @@ class Lexer {
         var _a;
         this.p = 0;
         this.lexResult = '';
+        this.line = 0;
         this.code = code;
         this.currentChar = (_a = this.code[0]) !== null && _a !== void 0 ? _a : '\0';
     }
@@ -38,18 +39,32 @@ class Lexer {
     }
     getNumber() {
         let value = '';
-        while (this.currentChar && /[0-9.]/.test(this.currentChar)) {
+        let hasDecimal = false;
+        while (this.currentChar && this.isNumeric(this.currentChar)) {
             value += this.currentChar;
             this.nextChar();
         }
-        if (/^[0-9]+\.[0-9]+$/.test(value)) {
-            return { type: TokenType.REELNUMBER, value };
+        if (this.currentChar === '.') {
+            const nextChar = this.code[this.p + 1];
+            if (nextChar && nextChar >= '0' && nextChar <= '9') {
+                hasDecimal = true;
+                value += this.currentChar; // Add the '.'
+                this.nextChar();
+                while (this.currentChar && this.isNumeric(this.currentChar)) {
+                    value += this.currentChar;
+                    this.nextChar();
+                }
+            }
         }
-        if (/^[0-9]+$/.test(value)) {
-            return { type: TokenType.INTNUMBER, value };
+        if (hasDecimal) {
+            return { type: TokenType.REELNUMBER, value, line: this.line };
         }
-        return { type: TokenType.ERROR, value: value, errorMsg: 'Invalid number' };
-        throw new Error(`Invalid number '${value}' at position ${this.p}`);
+        else {
+            return { type: TokenType.INTNUMBER, value, line: this.line };
+        }
+    }
+    isNumeric(c) {
+        return c >= '0' && c <= '9';
     }
     getString() {
         let value = this.currentChar;
@@ -61,15 +76,19 @@ class Lexer {
         if (this.currentChar === '"') {
             value += this.currentChar;
             this.nextChar();
-            return { type: TokenType.STRING, value };
+            return { type: TokenType.STRING, value, line: this.line };
         }
         else {
-            return { type: TokenType.ERROR, value: value, errorMsg: 'Invalid string' };
+            return { type: TokenType.ERROR, value: value, line: this.line, errorMsg: 'Invalid string' };
         }
     }
     getKeyword() {
         let value = '';
-        while (this.currentChar && /[a-zA-Z0-9_]/.test(this.currentChar)) {
+        if (this.isAlphabet(this.currentChar) || this.currentChar === '_') {
+            value += this.currentChar;
+            this.nextChar();
+        }
+        while (this.currentChar && this.isKeywordChar(this.currentChar)) {
             value += this.currentChar;
             this.nextChar();
         }
@@ -88,79 +107,86 @@ class Lexer {
         };
         const type = keywords[value];
         if (type !== undefined) {
-            return { type, value };
+            return { type, value, line: this.line };
         }
-        return { type: TokenType.ID, value: value };
+        return { type: TokenType.ID, value: value, line: this.line };
+    }
+    isKeywordChar(n) {
+        return this.isAlphabet(n) || n === '_' || this.isNumeric(n);
+    }
+    isAlphabet(n) {
+        return typeof n === 'string' && n.length === 1 && n.toLocaleLowerCase() !== n.toUpperCase();
     }
     createToken() {
         if (this.skipWhiteSpace())
             return this.createToken();
         if (this.skipComment())
             return this.createToken();
-        if (/[0-9]/.test(this.currentChar))
+        if (this.isNumeric(this.currentChar))
             return this.getNumber();
-        if (/[a-zA-Z]/.test(this.currentChar))
+        if (this.isAlphabet(this.currentChar))
             return this.getKeyword();
         if (this.currentChar === ':' && this.code[this.p + 1] === '=') {
             this.nextChar();
             this.nextChar();
-            return { type: TokenType.ASSIGN, value: ':=' };
+            return { type: TokenType.ASSIGN, value: ':=', line: this.line };
         }
         if (this.currentChar === '<' && this.code[this.p + 1] === '=') {
             this.nextChar();
             this.nextChar();
-            return { type: TokenType.LESSEQ, value: '<=' };
+            return { type: TokenType.LESSEQ, value: '<=', line: this.line };
         }
         if (this.currentChar === '>' && this.code[this.p + 1] === '=') {
             this.nextChar();
             this.nextChar();
-            return { type: TokenType.GREATEREQ, value: '>=' };
+            return { type: TokenType.GREATEREQ, value: '>=', line: this.line };
         }
         if (this.currentChar === '"')
             return this.getString();
         switch (this.currentChar) {
             case '+':
                 this.nextChar();
-                return { type: TokenType.PLUS, value: '+' };
+                return { type: TokenType.PLUS, value: '+', line: this.line };
             case '-':
                 this.nextChar();
-                return { type: TokenType.MINUS, value: '-' };
+                return { type: TokenType.MINUS, value: '-', line: this.line };
             case '*':
                 this.nextChar();
-                return { type: TokenType.MULTIPLE, value: '*' };
+                return { type: TokenType.MULTIPLE, value: '*', line: this.line };
             case '/':
                 this.nextChar();
-                return { type: TokenType.DIVISION, value: '/' };
+                return { type: TokenType.DIVISION, value: '/', line: this.line };
             case '<':
                 this.nextChar();
-                return { type: TokenType.LESSTHEN, value: '<' };
+                return { type: TokenType.LESSTHEN, value: '<', line: this.line };
             case '>':
                 this.nextChar();
-                return { type: TokenType.GREATERTHEN, value: '>' };
+                return { type: TokenType.GREATERTHEN, value: '>', line: this.line };
             case '[':
                 this.nextChar();
-                return { type: TokenType.STARTCOND, value: '[' };
+                return { type: TokenType.STARTCOND, value: '[', line: this.line };
             case ']':
                 this.nextChar();
-                return { type: TokenType.FINISHCOND, value: ']' };
+                return { type: TokenType.FINISHCOND, value: ']', line: this.line };
             case ',':
                 this.nextChar();
-                return { type: TokenType.COMM, value: ',' };
+                return { type: TokenType.COMM, value: ',', line: this.line };
             case '#':
                 this.nextChar();
-                return { type: TokenType.ENDINST, value: '#' };
+                return { type: TokenType.ENDINST, value: '#', line: this.line };
             case '\r':
                 this.nextChar();
                 return this.createToken();
             case '\0':
-                return { type: TokenType.ENDFILE, value: '\\0' };
+                return { type: TokenType.ENDFILE, value: '\\0', line: this.line };
             case '\n':
+                this.line++;
                 this.nextChar();
-                return { type: TokenType.FINISHLINE, value: '\n' };
+                return { type: TokenType.FINISHLINE, value: '\n', line: this.line };
             default:
                 const errorChar = this.currentChar;
                 this.nextChar();
-                return { type: TokenType.ERROR, value: errorChar, errorMsg: 'Invalid character' };
+                return { type: TokenType.ERROR, value: errorChar, errorMsg: 'Invalid character', line: this.line };
         }
     }
     readFile() {
@@ -178,9 +204,9 @@ class Lexer {
         tokens.forEach((tok) => {
             if (tok.type !== TokenType.ENDFILE && tok.type !== TokenType.FINISHLINE) {
                 if (tok.errorMsg)
-                    this.lexResult += `<span class="error">${tok.value}: ${tok.errorMsg}</span>\n`;
+                    this.lexResult += `<p class="error"><span class="line-number">${tok.line + 1}</span>: ${tok.value}: ${tok.errorMsg}</p>`;
                 else
-                    this.lexResult += `${tok.value}: ${TokenDesc[tok.type]}\n`;
+                    this.lexResult += `<p><span class="line-number">${tok.line + 1}</span>: ${tok.value}: ${TokenDesc[tok.type]}\n</p>`;
             }
         });
     }

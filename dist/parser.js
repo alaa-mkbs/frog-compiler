@@ -9,11 +9,12 @@ export default class Parser {
             this.currentTokenIndex++;
     }
     getCurrentToken() {
-        var _a;
+        var _a, _b, _c;
         return ((_a = this.tokens[this.currentTokenIndex]) !== null && _a !== void 0 ? _a : {
             type: TokenType.ERROR,
             value: '',
             errorMsg: 'Unexpected end of input',
+            line: (_c = (_b = this.tokens[this.currentTokenIndex]) === null || _b === void 0 ? void 0 : _b.line) !== null && _c !== void 0 ? _c : 0,
         });
     }
     isMyType(type) {
@@ -35,10 +36,10 @@ export default class Parser {
         // skip \n
         while (this.isMyType(TokenType.FINISHLINE)) {
             this.nextToken();
-            return this.parseLine();
+            // return this.parseLine();
         }
         if (this.isMyType(TokenType.ENDFILE))
-            return { exp: '', desc: 'EOF', error: false };
+            return { exp: '', desc: 'EOF', error: false, line: this.getCurrentToken().line };
         switch (this.getCurrentToken().type) {
             case TokenType.INT:
             case TokenType.REEL:
@@ -51,31 +52,44 @@ export default class Parser {
                 return this.parseIfCondition();
             case TokenType.ELSE:
                 this.nextToken();
-                return { exp: 'Else', desc: 'Else condition', error: false };
+                return { exp: 'Else', desc: 'Else condition', error: false, line: this.getCurrentToken().line };
             case TokenType.STARTBLOCK:
                 this.nextToken();
-                return { exp: 'Begin', desc: 'Start block', error: false };
+                return { exp: 'Begin', desc: 'Start block', error: false, line: this.getCurrentToken().line };
             case TokenType.FINISHBLOCK:
                 this.nextToken();
-                return { exp: 'End', desc: 'End block', error: false };
+                return { exp: 'End', desc: 'End block', error: false, line: this.getCurrentToken().line };
             case TokenType.START:
                 this.nextToken();
-                return { exp: 'FRG_Begin', desc: 'Start programme', error: false };
+                return { exp: 'FRG_Begin', desc: 'Start programme', error: false, line: this.getCurrentToken().line };
             case TokenType.FINISH:
                 this.nextToken();
-                return { exp: 'FRG_End', desc: 'End programme', error: false };
+                return { exp: 'FRG_End', desc: 'End programme', error: false, line: this.getCurrentToken().line };
             case TokenType.REPEAT:
                 this.nextToken();
-                return { exp: 'Repeat', desc: 'Start Do WHile loop', error: false };
+                return { exp: 'Repeat', desc: 'Start Do WHile loop', error: false, line: this.getCurrentToken().line };
             case TokenType.UNTIL:
                 return this.parseWhileLoop();
             default:
                 const currentToken = this.getCurrentToken();
                 this.nextToken();
-                if (Object.values(TokenType).includes(currentToken.type))
-                    return { exp: currentToken.value, desc: 'Unexpected in this context', error: true };
-                else
-                    return { exp: currentToken.value, desc: 'Invalid token', error: true };
+                console.log('here');
+                console.log(currentToken);
+                console.log(this.getCurrentToken());
+                if (currentToken.type === TokenType.ERROR) {
+                    return {
+                        exp: currentToken.value,
+                        desc: 'Invalid token',
+                        error: true,
+                        line: currentToken.line + 1,
+                    };
+                }
+                return {
+                    exp: currentToken.value,
+                    desc: 'Unexpected in this context',
+                    error: true,
+                    line: currentToken.line + 1,
+                };
         }
     }
     parseDeclaration() {
@@ -83,7 +97,7 @@ export default class Parser {
         let exp = typeToken.value + ' ';
         this.nextToken();
         if (!this.isMyType(TokenType.ID)) {
-            return { exp: exp, desc: 'Expected identifier after type', error: true };
+            return { exp: exp, desc: 'Expected identifier after type', error: true, line: this.getCurrentToken().line };
         }
         while (this.isMyType(TokenType.ID)) {
             exp += this.getCurrentToken().value;
@@ -92,7 +106,7 @@ export default class Parser {
                 exp += this.getCurrentToken().value + ' ';
                 this.nextToken();
                 if (!this.isMyType(TokenType.ID)) {
-                    return { exp: exp, desc: 'Expected identifier after comma', error: true };
+                    return { exp: exp, desc: 'Expected identifier after comma', error: true, line: this.getCurrentToken().line };
                 }
             }
             else {
@@ -103,32 +117,34 @@ export default class Parser {
             exp += ' ' + this.getCurrentToken().value;
         }
         else {
-            return { exp: exp, desc: 'Expected "#" at end of declaration', error: true };
+            return { exp: exp, desc: 'Expected "#" at end of declaration', error: true, line: this.getCurrentToken().line };
         }
         this.nextToken();
         return {
             exp: exp,
             desc: typeToken.type === TokenType.INT ? 'Integer declaration' : 'Real declaration',
             error: false,
+            line: this.getCurrentToken().line,
         };
     }
     parseAffectation() {
         let lExp = this.getCurrentToken().value;
         this.nextToken();
         if (!this.isMyType(TokenType.ASSIGN)) {
-            return { exp: lExp, desc: 'Expected assign after id', error: true };
+            return { exp: lExp, desc: 'Expected assign after id', error: true, line: this.getCurrentToken().line };
         }
         this.nextToken();
         let rExp = this.parseExpression();
         if (rExp === null)
-            return { exp: lExp, desc: 'syntax error', error: true };
+            return { exp: lExp, desc: 'syntax error', error: true, line: this.getCurrentToken().line };
         if (this.getCurrentToken().type !== TokenType.ENDINST)
-            return { exp: lExp + ':=' + rExp, desc: 'Expected "#" at end of affectation', error: true };
+            return { exp: lExp + ':=' + rExp, desc: 'Expected "#" at end of affectation', error: true, line: this.getCurrentToken().line };
         this.nextToken();
         return {
             exp: lExp + ':=' + rExp + '#',
             desc: 'Assign value',
             error: false,
+            line: this.getCurrentToken().line,
         };
     }
     parseFactor() {
@@ -164,7 +180,7 @@ export default class Parser {
     parseOperator() {
         const tok = this.getCurrentToken();
         if (!this.isOperator(tok.type)) {
-            return { exp: tok.value, desc: 'Expected operator', error: true };
+            return { exp: tok.value, desc: 'Expected operator', error: true, line: this.getCurrentToken().line };
         }
         this.nextToken();
         return tok.value;
@@ -190,7 +206,7 @@ export default class Parser {
             this.nextToken();
         }
         else {
-            return { exp: exp, desc: 'Expected [ after if', error: true };
+            return { exp: exp, desc: 'Expected [ after if', error: true, line: this.getCurrentToken().line };
         }
         let condStr = this.parseExpression();
         if (!condStr)
@@ -198,6 +214,7 @@ export default class Parser {
                 exp: exp,
                 desc: 'Invalid expression inside If condition',
                 error: true,
+                line: this.getCurrentToken().line,
             };
         exp += condStr;
         if (this.isMyType(TokenType.FINISHCOND)) {
@@ -205,12 +222,13 @@ export default class Parser {
             this.nextToken();
         }
         else {
-            return { exp: exp, desc: 'Expected ] after if condition', error: true };
+            return { exp: exp, desc: 'Expected ] after if condition', error: true, line: this.getCurrentToken().line };
         }
         return {
             exp: exp,
             desc: 'If condition',
             error: false,
+            line: this.getCurrentToken().line,
         };
     }
     parseWhileLoop() {
@@ -234,6 +252,7 @@ export default class Parser {
             exp: exp,
             desc: 'WHile condition',
             error: false,
+            line: this.getCurrentToken().line,
         };
     }
     parsePrint() {
@@ -253,31 +272,32 @@ export default class Parser {
                     exp += this.getCurrentToken().value + ' ';
                     this.nextToken();
                     if (!this.isMyType(TokenType.ID)) {
-                        return { exp, desc: 'Expected identifier after comma', error: true };
+                        return { exp, desc: 'Expected identifier after comma', error: true, line: this.getCurrentToken().line };
                     }
                 }
                 else {
                     break;
                 }
                 if (this.isMyType(TokenType.ENDFILE)) {
-                    return { exp, desc: 'Unexpected end of input', error: true };
+                    return { exp, desc: 'Unexpected end of input', error: true, line: this.getCurrentToken().line };
                 }
             }
         }
         else {
-            return { exp, desc: 'Expected string or identifier after FRG_Print', error: true };
+            return { exp, desc: 'Expected string or identifier after FRG_Print', error: true, line: this.getCurrentToken().line };
         }
         if (this.isMyType(TokenType.ENDINST)) {
             exp += ' ' + this.getCurrentToken().value;
             this.nextToken();
         }
         else {
-            return { exp, desc: 'Expected "#" at end of print', error: true };
+            return { exp, desc: 'Expected "#" at end of print', error: true, line: this.getCurrentToken().line };
         }
         return {
             exp,
             desc: typeToken === 'string' ? 'Print a string' : 'Print value of variable',
             error: false,
+            line: this.getCurrentToken().line,
         };
     }
     getParseResult(parsers) {
@@ -286,9 +306,9 @@ export default class Parser {
             if (par.desc === 'EOF')
                 return;
             if (par.error)
-                parseResult += `<span class="error">${par.exp}: ${par.desc}</span>\n`;
+                parseResult += `<p class="error"><span class="line-number">${par.line}:</span> ${par.exp}: ${par.desc}</p>`;
             else
-                parseResult += `${par.exp}: ${par.desc}\n`;
+                parseResult += `<p><span class="line-number">${par.line}:</span> ${par.exp}: ${par.desc}\n</p>`;
         });
         return parseResult;
     }

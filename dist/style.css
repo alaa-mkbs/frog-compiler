@@ -213,3 +213,7 @@ body {
 .error {
     color: red;
 }
+
+.line-number {
+    color: gray;
+}

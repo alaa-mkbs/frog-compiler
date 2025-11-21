@@ -1,16 +1,19 @@
-Instruction	Meaning (English)
-Snl_Start	Start of program
-Snl_Int i, j, k_22 %.	Integer declaration (i, j, k_22)
-Set i 33 %.	Assign value 33 to i
-Snl_Real X1_1 %.	Real number declaration (X1_1)
-%..	Comment
-If % i = j %	Condition: i equals j
-Set k_22 42 %.	Assign value 42 to k_22
-Else	Else branch
-Start	Start inner block
-Get j From i %.	Assign i into j
-Set X1_1 33,8 %.	Assign value 33.8 to X1_1
-Finish	End inner block
-Snl_Put " je suis SNAIL :) " %.	Print a message
-Snl_Put i, j %.	Print values of variables i and j
-Snl_Finish	End of program
+FRG_Begin
+FRG_Int i, j, x1, x2 #
+FRG_Real x3 #
+i:=30 #
+If [ i<=20]
+x1:=10 #
+Else
+Begin
+x1:=30 #
+x3:=x1*4 #
+FRG_Print x1, x3 #
+ End
+FRG_Print " Hello :) " #
+## instruction de boucle Repeat
+Repeat
+ i:=i-5 #
+ FRG_Print i #
+until [ i <= 15]
+FRG_End

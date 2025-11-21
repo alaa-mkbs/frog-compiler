@@ -4,14 +4,14 @@ enum TokenType {
   STARTBLOCK = 'STARTBLOCK', // Begin
   FINISHBLOCK = 'FINISHBLOCK', // End
   STARTCOND = 'STARTCOND', // [
-  FINISHCOND = 'FINISHCOND', // ] 
+  FINISHCOND = 'FINISHCOND', // ]
   ENDINST = 'ENDINST', // #
   REPEAT = 'REPEAT',
-  UNTIL = "UNTIL",
+  UNTIL = 'UNTIL',
 
   ID = 'ID', // x, x_, abc123, abc_123
   IF = 'IF', // If
-  ELSE = 'ELSE', // Else 
+  ELSE = 'ELSE', // Else
 
   INTNUMBER = 'INTNUMBER', // 5
   REELNUMBER = 'REELNUMBER', // 5.3
@@ -24,7 +24,7 @@ enum TokenType {
   COMM = 'COMM', // ,
   EQUAL = 'EQUAL', // =
   ASSIGN = 'ASSIGN', // :=
-  LESSTHEN = 'LESSTHEN', // < 
+  LESSTHEN = 'LESSTHEN', // <
   LESSEQ = 'LESSEQ', // <=
   GREATERTHEN = 'GREATERTHEN', // >
   GREATEREQ = 'GREATEREQ', // >=
@@ -33,12 +33,11 @@ enum TokenType {
   MULTIPLE = 'MULTIPLE', // *
   DIVISION = 'DIVISION', // /
 
-  FINISHLINE = "FINISHLINE", // \n
-  ENDFILE = "ENDFILE", // EOF
+  FINISHLINE = 'FINISHLINE', // \n
+  ENDFILE = 'ENDFILE', // EOF
 
-  ERROR = "ERROR"
+  ERROR = 'ERROR',
 }
-
 
 export const TokenDesc: { [key: string]: string } = {
   [TokenType.START]: 'keyword for program start',
@@ -66,7 +65,8 @@ export const TokenDesc: { [key: string]: string } = {
   [TokenType.PRINT]: 'keyword for print',
 
   [TokenType.COMM]: 'comma separator',
-  [TokenType.EQUAL]: 'assignment operator',
+  [TokenType.EQUAL]: 'equal operator',
+  [TokenType.ASSIGN]: 'assignment operator',
 
   [TokenType.LESSTHEN]: 'comparison operator',
   [TokenType.LESSEQ]: 'comparison operator',
@@ -81,21 +81,21 @@ export const TokenDesc: { [key: string]: string } = {
   [TokenType.FINISHLINE]: 'end of line',
   [TokenType.ENDFILE]: 'end of file',
 
-  [TokenType.ERROR]: 'invalid'
+  [TokenType.ERROR]: 'invalid',
 };
-
 
 interface Token {
   type: TokenType;
   value: string;
-  errorMsg?: string,
+  line: number;
+  errorMsg?: string;
 }
 
 interface Parse {
-  exp: string,
-  desc: string,
-  error: boolean
+  exp: string;
+  desc: string;
+  error: boolean;
+  line: number;
 }
-
 
 export { type Token, TokenType, type Parse };

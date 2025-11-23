@@ -4,7 +4,7 @@ export default class Semantic {
         this.symbols = {};
         this.errors = [];
         this.output = [];
-        this.parses = parses.filter(p => p.exp.trim() !== '');
+        this.parses = parses.filter((p) => p.exp.trim() !== '');
     }
     analyze() {
         var _a, _b, _c, _d, _e, _f;
@@ -78,12 +78,12 @@ export default class Semantic {
     executeIf(ifIndex) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         const ifParse = this.parses[ifIndex];
-        const condition = this.extractCondition((_a = ifParse === null || ifParse === void 0 ? void 0 : ifParse.exp) !== null && _a !== void 0 ? _a : "");
+        const condition = this.extractCondition((_a = ifParse === null || ifParse === void 0 ? void 0 : ifParse.exp) !== null && _a !== void 0 ? _a : '');
         const conditionResult = this.evaluateCondition(condition, (_b = ifParse === null || ifParse === void 0 ? void 0 : ifParse.line) !== null && _b !== void 0 ? _b : 0);
         let i = ifIndex + 1;
         const nextExp = i < this.parses.length ? (_c = this.parses[i]) === null || _c === void 0 ? void 0 : _c.exp : '';
         if (nextExp === 'Else' || nextExp === 'End') {
-            // Single instruction 
+            // Single instruction
             if (conditionResult) {
                 if (i < this.parses.length) {
                     this.executeSingleInstruction(i);
@@ -172,7 +172,7 @@ export default class Semantic {
                     i++;
                 }
             }
-            const untilExp = (_e = (_d = this.parses[untilIndex]) === null || _d === void 0 ? void 0 : _d.exp) !== null && _e !== void 0 ? _e : "";
+            const untilExp = (_e = (_d = this.parses[untilIndex]) === null || _d === void 0 ? void 0 : _d.exp) !== null && _e !== void 0 ? _e : '';
             const condition = this.extractCondition(untilExp);
             const conditionResult = this.evaluateCondition(condition, (_g = (_f = this.parses[untilIndex]) === null || _f === void 0 ? void 0 : _f.line) !== null && _g !== void 0 ? _g : 0);
             if (conditionResult)
@@ -249,10 +249,14 @@ export default class Semantic {
     executeDeclaration(exp, line) {
         const isInt = exp.startsWith('FRG_Int');
         const type = isInt ? 'FRG_Int' : 'FRG_Real';
-        const varPart = exp.replace(isInt ? 'FRG_Int' : 'FRG_Real', '')
+        const varPart = exp
+            .replace(isInt ? 'FRG_Int' : 'FRG_Real', '')
             .replace('#', '')
             .trim();
-        const vars = varPart.split(',').map(v => v.trim()).filter(v => v !== '');
+        const vars = varPart
+            .split(',')
+            .map((v) => v.trim())
+            .filter((v) => v !== '');
         for (const varName of vars) {
             if (this.symbols[varName]) {
                 this.errors.push({ line, error: `Variable '${varName}' already declared` });
@@ -261,14 +265,14 @@ export default class Semantic {
                 this.symbols[varName] = {
                     type,
                     init: false,
-                    value: type === 'FRG_Int' ? 0 : 0.0
+                    value: type === 'FRG_Int' ? 0 : 0.0,
                 };
             }
         }
     }
     executeAffectation(exp, line) {
         exp = exp.replace('#', '').trim();
-        const [left, right] = exp.split(':=').map(part => part.trim());
+        const [left, right] = exp.split(':=').map((part) => part.trim());
         if (!left || !right) {
             this.errors.push({ line, error: 'Invalid assignment syntax' });
             return;
@@ -293,7 +297,7 @@ export default class Semantic {
             this.output.push(str);
             return;
         }
-        const vars = exp.split(',').map(v => v.trim());
+        const vars = exp.split(',').map((v) => v.trim());
         const results = [];
         for (const varName of vars) {
             if (varName && this.symbols[varName]) {
@@ -327,7 +331,7 @@ export default class Semantic {
         for (const op of operators) {
             if (condition.includes(op)) {
                 operator = op;
-                parts = condition.split(op).map(p => p.trim());
+                parts = condition.split(op).map((p) => p.trim());
                 break;
             }
         }
@@ -335,24 +339,31 @@ export default class Semantic {
             this.errors.push({ line, error: `Invalid condition: ${condition}` });
             return false;
         }
-        const left = this.evaluateExpression((_a = parts[0]) !== null && _a !== void 0 ? _a : "", line);
-        const right = this.evaluateExpression((_b = parts[1]) !== null && _b !== void 0 ? _b : "", line);
+        const left = this.evaluateExpression((_a = parts[0]) !== null && _a !== void 0 ? _a : '', line);
+        const right = this.evaluateExpression((_b = parts[1]) !== null && _b !== void 0 ? _b : '', line);
         switch (operator) {
-            case '<=': return left <= right;
-            case '>=': return left >= right;
-            case '<': return left < right;
-            case '>': return left > right;
-            case '==': return Math.abs(left - right) < 0.0001;
-            case '!=': return Math.abs(left - right) > 0.0001;
-            default: return false;
+            case '<=':
+                return left <= right;
+            case '>=':
+                return left >= right;
+            case '<':
+                return left < right;
+            case '>':
+                return left > right;
+            case '==':
+                return Math.abs(left - right) < 0.0001;
+            case '!=':
+                return Math.abs(left - right) > 0.0001;
+            default:
+                return false;
         }
     }
     evaluateExpression(expr, line) {
         var _a, _b;
         expr = expr.trim();
-        const num = parseFloat(expr);
-        if (!isNaN(num))
-            return num;
+        if (this.isNumericString(expr)) {
+            return parseFloat(expr);
+        }
         if (this.symbols[expr]) {
             if (!((_a = this.symbols[expr]) === null || _a === void 0 ? void 0 : _a.init)) {
                 this.errors.push({ line, error: `Variable '${expr}' used before initialization` });
@@ -362,32 +373,59 @@ export default class Semantic {
         }
         return this.evaluateArithmetic(expr, line);
     }
+    isNumericString(s) {
+        var _a;
+        if (!s || s.length === 0)
+            return false;
+        let i = 0;
+        if (s[0] === '+' || s[0] === '-') {
+            if (s.length === 1)
+                return false;
+            i = 1;
+        }
+        let dotSeen = false;
+        let digitSeen = false;
+        for (; i < s.length; i++) {
+            const ch = (_a = s[i]) !== null && _a !== void 0 ? _a : 0;
+            if (ch >= '0' && ch <= '9') {
+                digitSeen = true;
+                continue;
+            }
+            if (ch === '.') {
+                if (dotSeen)
+                    return false;
+                dotSeen = true;
+                continue;
+            }
+            return false;
+        }
+        return digitSeen;
+    }
     evaluateArithmetic(expr, line) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         let processedExpr = expr;
         const varNames = Object.keys(this.symbols).sort((a, b) => b.length - a.length);
         for (const varName of varNames) {
+            if (!((_a = this.symbols[varName]) === null || _a === void 0 ? void 0 : _a.init))
+                continue;
             let position = processedExpr.indexOf(varName);
             while (position !== -1) {
-                const before = position === 0 ? '' : (_a = processedExpr[position - 1]) !== null && _a !== void 0 ? _a : "";
-                const after = position + varName.length >= processedExpr.length ? '' : (_b = processedExpr[position + varName.length]) !== null && _b !== void 0 ? _b : "";
+                const before = position === 0 ? '' : (_b = processedExpr[position - 1]) !== null && _b !== void 0 ? _b : '';
+                const after = position + varName.length >= processedExpr.length ? '' : (_c = processedExpr[position + varName.length]) !== null && _c !== void 0 ? _c : '';
                 const isWholeWord = !this.isAlphaNumeric(before) && !this.isAlphaNumeric(after);
                 if (isWholeWord) {
-                    const varData = this.symbols[varName];
-                    if (!(varData === null || varData === void 0 ? void 0 : varData.init)) {
-                        this.errors.push({ line, error: `Variable '${varName}' used before initialization` });
-                        processedExpr = processedExpr.substring(0, position) + '0' + processedExpr.substring(position + varName.length);
-                    }
-                    else {
-                        processedExpr = processedExpr.substring(0, position) + String(varData.value) + processedExpr.substring(position + varName.length);
-                    }
+                    const value = String(this.symbols[varName].value);
+                    processedExpr = processedExpr.substring(0, position) + value + processedExpr.substring(position + varName.length);
+                    position = processedExpr.indexOf(varName, position + value.length);
                 }
-                position = processedExpr.indexOf(varName, position + 1);
+                else {
+                    position = processedExpr.indexOf(varName, position + 1);
+                }
             }
         }
         processedExpr = processedExpr.split(' ').join('');
         for (let i = 0; i < processedExpr.length; i++) {
-            const char = (_c = processedExpr[i]) !== null && _c !== void 0 ? _c : "";
+            const char = (_d = processedExpr[i]) !== null && _d !== void 0 ? _d : '';
             if (!this.isValidExprChar(char)) {
                 this.errors.push({ line, error: `Invalid character '${char}' in expression` });
                 return 0;
@@ -397,75 +435,102 @@ export default class Semantic {
             return this.calculateExpression(processedExpr);
         }
         catch (error) {
-            this.errors.push({ line, error: `Invalid expression: ${expr}` });
+            if (error instanceof Error && error.message === 'Division by zero is impossible') {
+                this.errors.push({ line, error: 'Division by zero is impossible' });
+            }
+            else {
+                this.errors.push({ line, error: `Invalid expression: ${expr}` });
+            }
             return 0;
         }
     }
     calculateExpression(expr) {
-        let index = 0;
-        const parseExpression = () => {
-            let left = parseTerm();
-            while (index < expr.length && (expr[index] === '+' || expr[index] === '-')) {
-                const op = expr[index];
-                index++;
-                const right = parseTerm();
-                if (op === '+')
-                    left += right;
-                else
-                    left -= right;
+        let tokens = this.tokenize(expr);
+        return this.parseExpression(tokens);
+    }
+    tokenize(expr) {
+        var _a, _b;
+        const tokens = [];
+        let i = 0;
+        while (i < expr.length) {
+            const char = (_a = expr[i]) !== null && _a !== void 0 ? _a : '';
+            if (char === ' ' || char === '\t') {
+                i++;
+                continue;
             }
-            return left;
-        };
-        const parseTerm = () => {
-            let left = parseFactor();
-            while (index < expr.length && (expr[index] === '*' || expr[index] === '/')) {
-                const op = expr[index];
-                index++;
-                const right = parseFactor();
-                if (op === '*')
-                    left *= right;
-                else
-                    left /= right;
-            }
-            return left;
-        };
-        const parseFactor = () => {
-            var _a;
-            if (index >= expr.length)
-                return 0;
-            if (expr[index] === '(') {
-                index++;
-                const result = parseExpression();
-                if (index >= expr.length || expr[index] !== ')') {
-                    throw new Error('Missing closing parenthesis');
+            if (this.isDigit(char) || char === '.') {
+                let num = '';
+                while (i < expr.length && (this.isDigit((_b = expr[i]) !== null && _b !== void 0 ? _b : '') || expr[i] === '.')) {
+                    num += expr[i];
+                    i++;
                 }
-                index++;
-                return result;
+                tokens.push(num);
             }
-            if (expr[index] === '-') {
-                index++;
-                return -parseFactor();
+            else if (char === '+' || char === '-' || char === '*' || char === '/' || char === '(' || char === ')') {
+                tokens.push(char);
+                i++;
             }
-            let numStr = '';
-            while (index < expr.length &&
-                (this.isDigit((_a = expr[index]) !== null && _a !== void 0 ? _a : "") || expr[index] === '.')) {
-                numStr += expr[index];
-                index++;
+            else {
+                i++;
             }
-            if (numStr === '') {
-                throw new Error('Expected number');
+        }
+        return tokens;
+    }
+    parseExpression(tokens) {
+        let left = this.parseTerm(tokens);
+        while (tokens.length > 0 && (tokens[0] === '+' || tokens[0] === '-')) {
+            const op = tokens.shift();
+            const right = this.parseTerm(tokens);
+            if (op === '+') {
+                left += right;
             }
-            return parseFloat(numStr);
-        };
-        return parseExpression();
+            else {
+                left -= right;
+            }
+        }
+        return left;
+    }
+    parseTerm(tokens) {
+        let left = this.parseFactor(tokens);
+        while (tokens.length > 0 && (tokens[0] === '*' || tokens[0] === '/')) {
+            const op = tokens.shift();
+            const right = this.parseFactor(tokens);
+            if (op === '*') {
+                left *= right;
+            }
+            else {
+                if (right === 0) {
+                    throw new Error('Division by zero is impossible');
+                }
+                left /= right;
+            }
+        }
+        return left;
+    }
+    parseFactor(tokens) {
+        if (tokens.length === 0) {
+            throw new Error('Unexpected end of expression');
+        }
+        const token = tokens.shift();
+        if (token === '(') {
+            const result = this.parseExpression(tokens);
+            if (tokens.length === 0 || tokens.shift() !== ')') {
+                throw new Error('Missing closing parenthesis');
+            }
+            return result;
+        }
+        if (token === '-') {
+            return -this.parseFactor(tokens);
+        }
+        if (token && !isNaN(parseFloat(token))) {
+            return parseFloat(token);
+        }
+        throw new Error(`Invalid token: ${token}`);
     }
     isAlphaNumeric(char) {
         if (!char)
             return false;
-        return (char >= 'a' && char <= 'z') ||
-            (char >= 'A' && char <= 'Z') ||
-            (char >= '0' && char <= '9') ||
-            char === '_';
+        return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char === '_';
     }
     isValidExprChar(char) {
         const validChars = '0123456789+-*/().';
@@ -475,13 +540,16 @@ export default class Semantic {
         return char >= '0' && char <= '9';
     }
     getSymbolTable() {
-        return this.symbols;
+        return Object.entries(this.symbols)
+            .map(([varName, info]) => `<p>${varName}: type: ${info.type}, init: ${info.init}, value: ${info.value}</p>`)
+            .join('');
     }
     getOutput() {
         return this.output.join('\n');
     }
     getErrors() {
-        return this.errors.map(err => `Line ${err.line}: ${err.error}`).join('\n');
+        this.errors.sort((a, b) => a.line - b.line);
+        return this.errors.map((err) => `Line ${err.line}: ${err.error}`).join('\n');
     }
     hasErrors() {
         return this.errors.length > 0;

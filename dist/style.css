@@ -217,3 +217,8 @@ body {
 .line-number {
     color: gray;
 }
+
+.var-title {
+    margin: 1rem auto .5rem;
+    color: green;
+}

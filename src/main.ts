@@ -126,9 +126,9 @@ class Ui {
     sem.analyze();
     this.errors = sem.getErrors();
     if (this.errors) {
-      if (this.analyserField) this.analyserField.innerHTML = this.errors;
+      if (this.analyserField) this.analyserField.innerHTML = `<p class='error'>${this.errors}</p>`;
     } else {
-      if (this.analyserField) this.analyserField.innerHTML = `<p >No errors found</p>`;
+      if (this.analyserField) this.analyserField.innerHTML = `<p >No errors found</p><h3 class='var-title'>Variables list:</h3>${sem.getSymbolTable()}`;
       if (this.resultField) this.resultField.innerHTML = sem.getOutput();
     }
     if (this.semBtn) {

@@ -228,6 +228,7 @@ body {
     height: 20rem;
     padding: 0;
 }
+
 .CodeMirror-vscrollbar {
     scrollbar-width: none;
 }

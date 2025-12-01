@@ -8,6 +8,9 @@ class Ui {
         this.tokens = [];
         this.parsers = [];
         this.errors = '';
+        setTimeout(() => {
+            this.editor = window.editor;
+        }, 100);
         this.fileCode = document.querySelector('#fileUploaded');
         this.filePath = document.querySelector('#filePath');
         this.lexBtn = document.querySelector('#lxAnalyser');
@@ -73,10 +76,11 @@ class Ui {
     }
     lexerHandler() {
         var _a;
-        if (!((_a = this.codeField) === null || _a === void 0 ? void 0 : _a.value))
+        const codeValue = this.editor ? this.editor.getValue() : (_a = this.codeField) === null || _a === void 0 ? void 0 : _a.value;
+        if (!codeValue)
             return;
         else
-            this.code = this.codeField.value;
+            this.code = codeValue;
         const lex = new Lexer(this.code);
         this.tokens = lex.readFile();
         if (this.tokens) {

@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
-        rel="stylesheet">
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <link rel="stylesheet" href="dist/style.css">
     <title>Mini compiler frog</title>
 </head>
@@ -73,5 +74,12 @@ FRG_End
     </div>
 </body>
 <script type="module" src="dist/main.js"></script>
+<script>
+    window.editor = CodeMirror.fromTextArea(document.getElementById('codeUploaded'), {
+        lineNumbers: true,
+        mode: "javascript",
+        theme: "default"
+    });
+</script>
 
 </html>

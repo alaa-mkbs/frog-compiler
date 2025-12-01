@@ -285,7 +285,7 @@ export default class Semantic {
         this.symbols[varName] = {
           type,
           init: false,
-          value: type === 'FRG_Int' ? 0 : 0.0,
+          value: NaN,
         };
       }
     }

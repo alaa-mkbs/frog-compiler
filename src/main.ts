@@ -22,12 +22,17 @@ class Ui {
   private codeField: HTMLTextAreaElement | null;
   private analyserField: HTMLTextAreaElement | null;
   private resultField: HTMLTextAreaElement | null;
+  private editor: any;
 
   constructor() {
     this.code = '';
     this.tokens = [];
     this.parsers = [];
     this.errors = '';
+
+    setTimeout(() => {
+      this.editor = (window as any).editor;
+    }, 100);
 
     this.fileCode = document.querySelector('#fileUploaded');
     this.filePath = document.querySelector('#filePath');
@@ -42,7 +47,6 @@ class Ui {
     this.codeField = document.querySelector('#codeUploaded');
     this.analyserField = document.querySelector('#codeAfterAnalyze');
     this.resultField = document.querySelector('#codeResult');
-
     this.lexerHandler();
     this.FileUploadedHandler();
     this.btnsHandler();
@@ -92,8 +96,9 @@ class Ui {
   }
 
   lexerHandler(): void {
-    if (!this.codeField?.value) return;
-    else this.code = this.codeField.value;
+    const codeValue = this.editor ? this.editor.getValue() : this.codeField?.value;
+    if (!codeValue) return;
+    else this.code = codeValue;
 
     const lex = new Lexer(this.code);
     this.tokens = lex.readFile();
@@ -128,7 +133,8 @@ class Ui {
     if (this.errors) {
       if (this.analyserField) this.analyserField.innerHTML = `<p class='error'>${this.errors}</p>`;
     } else {
-      if (this.analyserField) this.analyserField.innerHTML = `<p >No errors found</p><h3 class='var-title'>Variables list:</h3>${sem.getSymbolTable()}`;
+      if (this.analyserField)
+        this.analyserField.innerHTML = `<p >No errors found</p><h3 class='var-title'>Variables list:</h3>${sem.getSymbolTable()}`;
       if (this.resultField) this.resultField.innerHTML = sem.getOutput();
     }
     if (this.semBtn) {
@@ -154,20 +160,20 @@ class Ui {
       this.tokens = [];
       this.parsers = [];
       this.errors = '';
-      if(this.resultField) this.resultField.innerHTML = 'click on semantic analyser to see the result';
+      if (this.resultField) this.resultField.innerHTML = 'click on semantic analyser to see the result';
       this.lexerHandler();
     });
     this.lexBtn?.addEventListener('click', () => {
-      if(!this.codeField?.value) return;
+      if (!this.codeField?.value) return;
       this.lexerHandler();
     });
     this.synBtn?.addEventListener('click', () => {
-      if(!this.codeField?.value) return;
-      if(!this.tokens.length) return;
+      if (!this.codeField?.value) return;
+      if (!this.tokens.length) return;
       this.parserHandler();
     });
     this.semBtn?.addEventListener('click', () => {
-      if(!this.codeField?.value) return;
+      if (!this.codeField?.value) return;
       this.semanticsHandler();
     });
   }

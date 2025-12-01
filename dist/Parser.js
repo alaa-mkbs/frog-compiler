@@ -26,7 +26,6 @@ export default class Parser {
         let parses = [];
         let parse;
         let blockStack = [];
-        let lastSignificantParse = null; // Track last meaningful parse
         while (!this.isMyType(TokenType.ENDFILE)) {
             parse = this.parseLine();
             // Check block structure
@@ -130,7 +129,6 @@ export default class Parser {
         // skip \n
         while (this.isMyType(TokenType.FINISHLINE)) {
             this.nextToken();
-            // return this.parseLine();
         }
         if (this.isMyType(TokenType.ENDFILE))
             return { exp: '', desc: 'EOF', error: false, line: this.getCurrentToken().line };
@@ -243,6 +241,19 @@ export default class Parser {
     }
     parseFactor() {
         const tok = this.getCurrentToken();
+        // Handle unary minus (negative numbers)
+        if (this.isMyType(TokenType.MINUS)) {
+            this.nextToken();
+            const factor = this.parseFactor();
+            if (factor === null)
+                return null;
+            return '-' + factor;
+        }
+        // Handle unary plus
+        if (this.isMyType(TokenType.PLUS)) {
+            this.nextToken();
+            return this.parseFactor();
+        }
         if (this.isMyType(TokenType.ID)) {
             this.nextToken();
             return tok.value;
@@ -281,14 +292,19 @@ export default class Parser {
     }
     parseExpression() {
         let left = this.parseFactor();
+        if (left === null)
+            return null;
         if (!this.isOperator(this.getCurrentToken().type)) {
             return left;
         }
         while (this.isOperator(this.getCurrentToken().type)) {
             const op = this.parseOperator();
+            if (typeof op === 'object' && op.error)
+                return null;
             const right = this.parseFactor();
-            if (left)
-                left = left + op + right;
+            if (right === null)
+                return null;
+            left = left + op + right;
         }
         return left;
     }

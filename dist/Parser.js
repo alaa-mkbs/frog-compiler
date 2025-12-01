@@ -191,8 +191,20 @@ export default class Parser {
         if (!this.isMyType(TokenType.ID)) {
             return { exp: exp, desc: 'Expected identifier after type', error: true, line: this.getCurrentToken().line };
         }
+        // Reserved keywords that cannot be used as variable names
+        const reservedKeywords = ['FRG_Begin', 'FRG_End', 'Begin', 'End', 'If', 'Else', 'FRG_Int', 'FRG_Real', 'FRG_Print', 'Repeat', 'until'];
         while (this.isMyType(TokenType.ID)) {
-            exp += this.getCurrentToken().value;
+            const varName = this.getCurrentToken().value;
+            // Check if variable name is a reserved keyword
+            if (reservedKeywords.includes(varName)) {
+                return {
+                    exp: exp + varName,
+                    desc: `Cannot use reserved keyword '${varName}' as variable name`,
+                    error: true,
+                    line: this.getCurrentToken().line,
+                };
+            }
+            exp += varName;
             this.nextToken();
             if (this.isMyType(TokenType.COMM)) {
                 exp += this.getCurrentToken().value + ' ';

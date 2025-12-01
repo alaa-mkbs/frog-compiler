@@ -111,7 +111,7 @@ export default class Parser {
                     exp: '',
                     desc: `Unclosed Begin block at line ${unclosed.line}`,
                     error: true,
-                    line: unclosed.line
+                    line: unclosed.line,
                 });
             }
             else if (unclosed.type === 'Repeat') {
@@ -119,7 +119,7 @@ export default class Parser {
                     exp: '',
                     desc: `Repeat without matching Until at line ${unclosed.line}`,
                     error: true,
-                    line: unclosed.line
+                    line: unclosed.line,
                 });
             }
         }

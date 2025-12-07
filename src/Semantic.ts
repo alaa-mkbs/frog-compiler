@@ -440,7 +440,28 @@ export default class Semantic {
     const varNames = Object.keys(this.symbols).sort((a, b) => b.length - a.length);
 
     for (const varName of varNames) {
-      if (!this.symbols[varName]?.init) continue;
+      // CHECK: Skip uninitialized variables and report error
+      if (!this.symbols[varName]?.init) {
+        // Check if this variable is actually used in the expression
+        const regex = new RegExp(`\\b${varName}\\b`);
+        if (regex.test(processedExpr)) {
+          this.errors.push({ line, error: `Variable '${varName}' used before initialization` });
+          // Replace with 0 to allow expression to continue
+          let position = processedExpr.search(regex);
+          while (position !== -1) {
+            const before = position === 0 ? '' : processedExpr[position - 1] ?? '';
+            const after = position + varName.length >= processedExpr.length ? '' : processedExpr[position + varName.length] ?? '';
+            const isWholeWord = !this.isAlphaNumeric(before) && !this.isAlphaNumeric(after);
+
+            if (isWholeWord) {
+              processedExpr = processedExpr.substring(0, position) + '0' + processedExpr.substring(position + varName.length);
+            }
+            position = processedExpr.search(regex);
+            if (position <= 0) break; // Prevent infinite loop
+          }
+        }
+        continue;
+      }
 
       let position = processedExpr.indexOf(varName);
       while (position !== -1) {

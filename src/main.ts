@@ -10,7 +10,7 @@ class Ui {
   private errors: string;
 
   private fileCode: HTMLInputElement | null;
-  private filePath: HTMLInputElement | null;
+  private filePath: HTMLParagraphElement | null;
 
   private lexBtn: HTMLButtonElement | null;
   private synBtn: HTMLButtonElement | null;
@@ -20,8 +20,8 @@ class Ui {
   private compileBtn: HTMLButtonElement | null;
 
   private codeField: HTMLTextAreaElement | null;
-  private analyserField: HTMLTextAreaElement | null;
-  private resultField: HTMLTextAreaElement | null;
+  private analyserField: HTMLElement | null;
+  private resultField: HTMLElement | null;
   private editor: any;
 
   constructor() {
@@ -29,10 +29,6 @@ class Ui {
     this.tokens = [];
     this.parsers = [];
     this.errors = '';
-
-    setTimeout(() => {
-      this.editor = (window as any).editor;
-    }, 100);
 
     this.fileCode = document.querySelector('#fileUploaded');
     this.filePath = document.querySelector('#filePath');
@@ -47,7 +43,12 @@ class Ui {
     this.codeField = document.querySelector('#codeUploaded');
     this.analyserField = document.querySelector('#codeAfterAnalyze');
     this.resultField = document.querySelector('#codeResult');
-    this.lexerHandler();
+
+    setTimeout(() => {
+      this.editor = (window as any).editor;
+      this.lexerHandler();
+    }, 150);
+
     this.FileUploadedHandler();
     this.btnsHandler();
   }
@@ -55,19 +56,26 @@ class Ui {
   FileUploadedHandler(): void {
     this.fileCode?.addEventListener('change', (e) => {
       const input = e.target as HTMLInputElement;
-      if (this.filePath && input.files && input.files.length > 0) {
+      if (input.files && input.files.length > 0) {
         const selectedFile = input.files[0];
         if (selectedFile) {
-          this.filePath.textContent = selectedFile.name;
+          if (this.filePath) {
+            this.filePath.textContent = selectedFile.name;
+          }
+
           const reader = new FileReader();
           reader.onload = (event) => {
             const fileContent = event.target?.result as string;
-            if (this.codeField) {
-              this.clearHandler();
+
+            if (this.editor && this.editor.setValue) {
+              this.editor.setValue(fileContent);
+            } else if (this.codeField) {
               this.codeField.value = fileContent;
-              this.code = this.codeField.value;
-              this.lexerHandler();
             }
+
+            this.code = fileContent;
+
+            setTimeout(() => this.lexerHandler(), 100);
           };
           reader.readAsText(selectedFile);
         }
@@ -76,35 +84,57 @@ class Ui {
   }
 
   clearHandler(): void {
-    if (this.code) this.code = '';
-    if (this.fileCode) this.fileCode.value = '';
-    if (this.filePath) this.filePath.textContent = '';
-    if (this.codeField) this.codeField.value = '';
+    this.code = '';
+    this.tokens = [];
+    this.parsers = [];
+    this.errors = '';
+
+    if (this.fileCode) {
+      this.fileCode.value = '';
+    }
+
+    if (this.filePath) {
+      this.filePath.textContent = '';
+    }
+
+    const editorExists = this.editor && this.editor.setValue;
+
+    if (editorExists) {
+      this.editor.setValue('');
+      if (this.editor.clearHistory) this.editor.clearHistory();
+      if (this.editor.refresh) {
+        setTimeout(() => this.editor.refresh(), 50);
+      }
+    }
+
+    if (this.codeField) {
+      this.codeField.value = '';
+    }
+
     if (this.analyserField) this.analyserField.innerHTML = '';
     if (this.resultField) this.resultField.innerHTML = '';
-    if (this.tokens) this.tokens = [];
-    if (this.parsers) this.parsers = [];
-    if (this.errors) this.errors = '';
 
     console.clear();
 
-    const activeClassName = document.querySelectorAll('.active');
-
-    activeClassName?.forEach((el) => {
+    document.querySelectorAll('.active').forEach((el) => {
       el.classList.remove('active');
     });
+
+    if (this.lexBtn) this.lexBtn.classList.add('active');
   }
 
   lexerHandler(): void {
-    const codeValue = this.editor ? this.editor.getValue() : this.codeField?.value;
-    if (!codeValue) return;
-    else this.code = codeValue;
+    const codeValue = this.editor && typeof this.editor.getValue === 'function' ? this.editor.getValue() : this.codeField?.value;
+
+    if (!codeValue || codeValue.trim() === '') return;
+
+    this.code = codeValue;
 
     const lex = new Lexer(this.code);
     this.tokens = lex.readFile();
 
-    if (this.tokens) {
-      if (this.analyserField) this.analyserField.innerHTML = lex.getLexResult();
+    if (this.tokens && this.analyserField) {
+      this.analyserField.innerHTML = lex.getLexResult();
       if (this.lexBtn) {
         this.btnsRemoveActive();
         this.lexBtn.classList.add('active');
@@ -115,8 +145,8 @@ class Ui {
   parserHandler(): void {
     const prs = new Parser(this.tokens);
     this.parsers = prs.parseInput();
-    if (this.parsers) {
-      if (this.analyserField) this.analyserField.innerHTML = prs.getParseResult(this.parsers);
+    if (this.parsers && this.analyserField) {
+      this.analyserField.innerHTML = prs.getParseResult(this.parsers);
       if (this.synBtn) {
         this.btnsRemoveActive();
         this.synBtn.classList.add('active');
@@ -127,25 +157,28 @@ class Ui {
   semanticsHandler(): void {
     const thereAreAError = this.tokens.some((item) => item.errorMsg) || this.parsers.some((item) => item.error);
     if (this.tokens.length === 0 || this.parsers.length === 0 || thereAreAError) return;
+
     const sem = new Semantic(this.parsers);
     sem.analyze();
     this.errors = sem.getErrors();
+
     if (this.errors) {
-      if (this.analyserField) this.analyserField.innerHTML = `<p class='error'>${this.errors}</p>`;
+      if (this.analyserField) {
+        this.analyserField.innerHTML = `<p class='error'>${this.errors}</p>`;
+      }
     } else {
-      if (this.analyserField)
-        this.analyserField.innerHTML = `<p >No errors found</p><h3 class='var-title'>Variables list:</h3>${sem.getSymbolTable()}`;
-      if (this.resultField) this.resultField.innerHTML = sem.getOutput();
+      if (this.analyserField) {
+        this.analyserField.innerHTML = `<p>No errors found</p><h3 class='var-title'>Variables list:</h3>${sem.getSymbolTable()}`;
+      }
+      if (this.resultField) {
+        this.resultField.innerHTML = sem.getOutput();
+      }
     }
+
     if (this.semBtn) {
       this.btnsRemoveActive();
       this.semBtn.classList.add('active');
     }
-  }
-
-  resultHandler() {
-    const lex = new Lexer(this.code);
-    this.tokens = lex.readFile();
   }
 
   btnsRemoveActive() {
@@ -155,25 +188,36 @@ class Ui {
   }
 
   btnsHandler() {
-    this.clearBtn?.addEventListener('click', () => this.clearHandler());
+    this.clearBtn?.addEventListener('click', () => {
+      this.clearHandler();
+    });
+
     this.compileBtn?.addEventListener('click', () => {
       this.tokens = [];
       this.parsers = [];
       this.errors = '';
-      if (this.resultField) this.resultField.innerHTML = 'click on semantic analyser to see the result';
+      if (this.resultField) {
+        this.resultField.innerHTML = 'click on semantic analyser to see the result';
+      }
       this.lexerHandler();
     });
+
     this.lexBtn?.addEventListener('click', () => {
-      if (!this.codeField?.value) return;
+      const codeValue = this.editor && typeof this.editor.getValue === 'function' ? this.editor.getValue() : this.codeField?.value;
+      if (!codeValue || codeValue.trim() === '') return;
       this.lexerHandler();
     });
+
     this.synBtn?.addEventListener('click', () => {
-      if (!this.codeField?.value) return;
+      const codeValue = this.editor && typeof this.editor.getValue === 'function' ? this.editor.getValue() : this.codeField?.value;
+      if (!codeValue || codeValue.trim() === '') return;
       if (!this.tokens.length) return;
       this.parserHandler();
     });
+
     this.semBtn?.addEventListener('click', () => {
-      if (!this.codeField?.value) return;
+      const codeValue = this.editor && typeof this.editor.getValue === 'function' ? this.editor.getValue() : this.codeField?.value;
+      if (!codeValue || codeValue.trim() === '') return;
       this.semanticsHandler();
     });
   }

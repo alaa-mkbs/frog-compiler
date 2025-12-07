@@ -402,16 +402,36 @@ export default class Semantic {
         return digitSeen;
     }
     evaluateArithmetic(expr, line) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         let processedExpr = expr;
         const varNames = Object.keys(this.symbols).sort((a, b) => b.length - a.length);
         for (const varName of varNames) {
-            if (!((_a = this.symbols[varName]) === null || _a === void 0 ? void 0 : _a.init))
+            // CHECK: Skip uninitialized variables and report error
+            if (!((_a = this.symbols[varName]) === null || _a === void 0 ? void 0 : _a.init)) {
+                // Check if this variable is actually used in the expression
+                const regex = new RegExp(`\\b${varName}\\b`);
+                if (regex.test(processedExpr)) {
+                    this.errors.push({ line, error: `Variable '${varName}' used before initialization` });
+                    // Replace with 0 to allow expression to continue
+                    let position = processedExpr.search(regex);
+                    while (position !== -1) {
+                        const before = position === 0 ? '' : (_b = processedExpr[position - 1]) !== null && _b !== void 0 ? _b : '';
+                        const after = position + varName.length >= processedExpr.length ? '' : (_c = processedExpr[position + varName.length]) !== null && _c !== void 0 ? _c : '';
+                        const isWholeWord = !this.isAlphaNumeric(before) && !this.isAlphaNumeric(after);
+                        if (isWholeWord) {
+                            processedExpr = processedExpr.substring(0, position) + '0' + processedExpr.substring(position + varName.length);
+                        }
+                        position = processedExpr.search(regex);
+                        if (position <= 0)
+                            break; // Prevent infinite loop
+                    }
+                }
                 continue;
+            }
             let position = processedExpr.indexOf(varName);
             while (position !== -1) {
-                const before = position === 0 ? '' : (_b = processedExpr[position - 1]) !== null && _b !== void 0 ? _b : '';
-                const after = position + varName.length >= processedExpr.length ? '' : (_c = processedExpr[position + varName.length]) !== null && _c !== void 0 ? _c : '';
+                const before = position === 0 ? '' : (_d = processedExpr[position - 1]) !== null && _d !== void 0 ? _d : '';
+                const after = position + varName.length >= processedExpr.length ? '' : (_e = processedExpr[position + varName.length]) !== null && _e !== void 0 ? _e : '';
                 const isWholeWord = !this.isAlphaNumeric(before) && !this.isAlphaNumeric(after);
                 if (isWholeWord) {
                     const value = String(this.symbols[varName].value);
@@ -425,7 +445,7 @@ export default class Semantic {
         }
         processedExpr = processedExpr.split(' ').join('');
         for (let i = 0; i < processedExpr.length; i++) {
-            const char = (_d = processedExpr[i]) !== null && _d !== void 0 ? _d : '';
+            const char = (_f = processedExpr[i]) !== null && _f !== void 0 ? _f : '';
             if (!this.isValidExprChar(char)) {
                 this.errors.push({ line, error: `Invalid character '${char}' in expression` });
                 return 0;

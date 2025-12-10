@@ -146,7 +146,7 @@ export default class Parser {
 
       if (i > 0 && parses[i - 1]?.exp.startsWith('If[')) {
         if (prev.exp.includes(':=') || prev.exp.startsWith('FRG_Print')) {
-          return true; // Orphan - Begin after completed If
+          return true;
         }
       }
 
@@ -162,7 +162,7 @@ export default class Parser {
               if (j > 0) {
                 const before = parses[j - 1];
                 if (before?.exp.startsWith('If[') || before?.exp === 'Else') {
-                  return true; // Orphan - Begin after If/Else block completed
+                  return true;
                 }
               }
             }
@@ -240,7 +240,7 @@ export default class Parser {
             exp: currentToken.value,
             desc: 'Invalid token',
             error: true,
-            line: currentToken.line + 1,
+            line: currentToken.line,
           };
         }
 
@@ -248,82 +248,84 @@ export default class Parser {
           exp: currentToken.value,
           desc: 'Unexpected in this context',
           error: true,
-          line: currentToken.line + 1,
+          line: currentToken.line,
         };
     }
   }
 
-  private parseDeclaration() {
-    const typeToken = this.getCurrentToken();
-    const declLine = typeToken.line;
-    let exp = typeToken.value + ' ';
-    this.nextToken();
+private parseDeclaration() {
+  const typeToken = this.getCurrentToken();
+  const declLine = typeToken.line;
+  let exp = typeToken.value + ' ';
+  this.nextToken();
 
-    const reservedKeywords = ['FRG_Begin', 'FRG_End', 'Begin', 'End', 'If', 'Else', 'FRG_Int', 'FRG_Real', 'FRG_Print', 'Repeat', 'until'];
+  const reservedKeywords = ['FRG_Begin', 'FRG_End', 'Begin', 'End', 'If', 'Else', 'FRG_Int', 'FRG_Real', 'FRG_Print', 'Repeat', 'until'];
 
-    if (!this.isMyType(TokenType.ID)) {
-      const currentToken = this.getCurrentToken();
-      if (reservedKeywords.includes(currentToken.value)) {
-        return {
-          exp: exp + currentToken.value,
-          desc: `Cannot use reserved keyword '${currentToken.value}' as variable name`,
-          error: true,
-          line: declLine,
-        };
-      }
-      return { exp: exp, desc: 'Expected identifier after type', error: true, line: declLine };
+  const currentToken = this.getCurrentToken();
+  
+  if (!this.isMyType(TokenType.ID)) {
+    if (reservedKeywords.includes(currentToken.value)) {
+      return {
+        exp: exp + currentToken.value,
+        desc: `Cannot use reserved keyword '${currentToken.value}' as variable name`,
+        error: true,
+        line: declLine,
+      };
+    }
+    return { exp: exp, desc: 'Expected identifier after type', error: true, line: declLine };
+  }
+
+  while (this.isMyType(TokenType.ID)) {
+    const varName = this.getCurrentToken().value;
+
+    if (reservedKeywords.includes(varName)) {
+      return {
+        exp: exp + varName,
+        desc: `Cannot use reserved keyword '${varName}' as variable name`,
+        error: true,
+        line: declLine,
+      };
     }
 
-    while (this.isMyType(TokenType.ID)) {
-      const varName = this.getCurrentToken().value;
+    exp += varName;
+    this.nextToken();
 
-      if (reservedKeywords.includes(varName)) {
-        return {
-          exp: exp + varName,
-          desc: `Cannot use reserved keyword '${varName}' as variable name`,
-          error: true,
-          line: declLine,
-        };
-      }
-
-      exp += varName;
+    if (this.isMyType(TokenType.COMM)) {
+      exp += this.getCurrentToken().value + ' ';
       this.nextToken();
 
-      if (this.isMyType(TokenType.COMM)) {
-        exp += this.getCurrentToken().value + ' ';
-        this.nextToken();
-
-        if (!this.isMyType(TokenType.ID)) {
-          const currentToken = this.getCurrentToken();
-          if (reservedKeywords.includes(currentToken.value)) {
-            return {
-              exp: exp + currentToken.value,
-              desc: `Cannot use reserved keyword '${currentToken.value}' as variable name`,
-              error: true,
-              line: declLine,
-            };
-          }
-          return { exp: exp, desc: 'Expected identifier after comma', error: true, line: declLine };
+      const nextToken = this.getCurrentToken();
+      
+      if (!this.isMyType(TokenType.ID)) {
+        if (reservedKeywords.includes(nextToken.value)) {
+          return {
+            exp: exp + nextToken.value,
+            desc: `Cannot use reserved keyword '${nextToken.value}' as variable name`,
+            error: true,
+            line: declLine,
+          };
         }
-      } else {
-        break;
+        return { exp: exp, desc: 'Expected identifier after comma', error: true, line: declLine };
       }
-    }
-
-    if (this.isMyType(TokenType.ENDINST)) {
-      exp += ' ' + this.getCurrentToken().value;
     } else {
-      return { exp: exp, desc: 'Expected "#" at end of declaration', error: true, line: declLine };
+      break;
     }
-    this.nextToken();
-
-    return {
-      exp: exp,
-      desc: typeToken.type === TokenType.INT ? 'Integer declaration' : 'Real declaration',
-      error: false,
-      line: declLine,
-    };
   }
+
+  if (this.isMyType(TokenType.ENDINST)) {
+    exp += ' ' + this.getCurrentToken().value;
+    this.nextToken();
+  } else {
+    return { exp: exp, desc: 'Expected "#" at end of declaration', error: true, line: declLine };
+  }
+
+  return {
+    exp: exp,
+    desc: typeToken.type === TokenType.INT ? 'Integer declaration' : 'Real declaration',
+    error: false,
+    line: declLine,
+  };
+}
 
   private parseAffectation() {
     const affLine = this.getCurrentToken().line;
@@ -429,99 +431,99 @@ export default class Parser {
     return left;
   }
 
-  private parseIfCondition() {
-    const ifLine = this.getCurrentToken().line;
-    let exp = this.getCurrentToken().value;
-    this.nextToken();
+private parseIfCondition() {
+  const ifLine = this.getCurrentToken().line;
+  let exp = this.getCurrentToken().value;
+  this.nextToken();
 
-    if (!this.isMyType(TokenType.STARTCOND)) {
-      return { exp: exp, desc: 'Expected [ after if', error: true, line: ifLine };
-    }
-
-    exp += this.getCurrentToken().value;
-    this.nextToken();
-
-    let left = this.parseFactor();
-    if (!left) {
-      return { exp: exp, desc: 'Expected identifier or number in condition', error: true, line: ifLine };
-    }
-    exp += left;
-
-    const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ];
-    if (!comparisonOps.includes(this.getCurrentToken().type)) {
-      return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=)', error: true, line: ifLine };
-    }
-
-    exp += this.getCurrentToken().value;
-    this.nextToken();
-
-    let right = this.parseFactor();
-    if (!right) {
-      return { exp: exp, desc: 'Expected identifier or number after operator', error: true, line: ifLine };
-    }
-    exp += right;
-
-    if (!this.isMyType(TokenType.FINISHCOND)) {
-      return { exp: exp, desc: 'Expected ] after if condition', error: true, line: ifLine };
-    }
-
-    exp += this.getCurrentToken().value;
-    this.nextToken();
-
-    return {
-      exp: exp,
-      desc: 'If condition',
-      error: false,
-      line: ifLine,
-    };
+  if (!this.isMyType(TokenType.STARTCOND)) {
+    return { exp: exp, desc: 'Expected [ after if', error: true, line: ifLine };
   }
 
-  private parseWhileLoop() {
-    const untilLine = this.getCurrentToken().line;
-    let exp = this.getCurrentToken().value;
-    this.nextToken();
+  exp += this.getCurrentToken().value;
+  this.nextToken();
 
-    if (!this.isMyType(TokenType.STARTCOND)) {
-      return { exp: exp, desc: 'Expected [ after until', error: true, line: untilLine };
-    }
-
-    exp += this.getCurrentToken().value;
-    this.nextToken();
-
-    let left = this.parseFactor();
-    if (!left) {
-      return { exp: exp, desc: 'Expected identifier or number in until condition', error: true, line: untilLine };
-    }
-    exp += left;
-
-    const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ];
-    if (!comparisonOps.includes(this.getCurrentToken().type)) {
-      return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=) in until condition', error: true, line: untilLine };
-    }
-
-    exp += this.getCurrentToken().value;
-    this.nextToken();
-
-    let right = this.parseFactor();
-    if (!right) {
-      return { exp: exp, desc: 'Expected identifier or number after operator', error: true, line: untilLine };
-    }
-    exp += right;
-
-    if (!this.isMyType(TokenType.FINISHCOND)) {
-      return { exp: exp, desc: 'Expected ] after until condition', error: true, line: untilLine };
-    }
-
-    exp += this.getCurrentToken().value;
-    this.nextToken();
-
-    return {
-      exp: exp,
-      desc: 'Until condition',
-      error: false,
-      line: untilLine,
-    };
+  let left = this.parseFactor();
+  if (!left) {
+    return { exp: exp, desc: 'Expected identifier or number in condition', error: true, line: ifLine };
   }
+  exp += left;
+
+  const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ, TokenType.EQUAL];
+  if (!comparisonOps.includes(this.getCurrentToken().type)) {
+    return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=, =)', error: true, line: ifLine };
+  }
+
+  exp += this.getCurrentToken().value;
+  this.nextToken();
+
+  let right = this.parseFactor();
+  if (!right) {
+    return { exp: exp, desc: 'Expected identifier or number after operator', error: true, line: ifLine };
+  }
+  exp += right;
+
+  if (!this.isMyType(TokenType.FINISHCOND)) {
+    return { exp: exp, desc: 'Expected ] after if condition', error: true, line: ifLine };
+  }
+
+  exp += this.getCurrentToken().value;
+  this.nextToken();
+
+  return {
+    exp: exp,
+    desc: 'If condition',
+    error: false,
+    line: ifLine,
+  };
+}
+
+private parseWhileLoop() {
+  const untilLine = this.getCurrentToken().line;
+  let exp = this.getCurrentToken().value;
+  this.nextToken();
+
+  if (!this.isMyType(TokenType.STARTCOND)) {
+    return { exp: exp, desc: 'Expected [ after until', error: true, line: untilLine };
+  }
+
+  exp += this.getCurrentToken().value;
+  this.nextToken();
+
+  let left = this.parseFactor();
+  if (!left) {
+    return { exp: exp, desc: 'Expected identifier or number in until condition', error: true, line: untilLine };
+  }
+  exp += left;
+
+  const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ, TokenType.EQUAL];
+  if (!comparisonOps.includes(this.getCurrentToken().type)) {
+    return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=, =) in until condition', error: true, line: untilLine };
+  }
+
+  exp += this.getCurrentToken().value;
+  this.nextToken();
+
+  let right = this.parseFactor();
+  if (!right) {
+    return { exp: exp, desc: 'Expected identifier or number after operator', error: true, line: untilLine };
+  }
+  exp += right;
+
+  if (!this.isMyType(TokenType.FINISHCOND)) {
+    return { exp: exp, desc: 'Expected ] after until condition', error: true, line: untilLine };
+  }
+
+  exp += this.getCurrentToken().value;
+  this.nextToken();
+
+  return {
+    exp: exp,
+    desc: 'Until condition',
+    error: false,
+    line: untilLine,
+  };
+}
 
   private parsePrint() {
     const printLine = this.getCurrentToken().line;

@@ -325,7 +325,7 @@ export default class Semantic {
     }
     evaluateCondition(condition, line) {
         var _a, _b;
-        const operators = ['<=', '>=', '<', '>', '==', '!='];
+        const operators = ['<=', '>=', '<', '>', '='];
         let operator = '';
         let parts = [];
         for (const op of operators) {
@@ -350,10 +350,8 @@ export default class Semantic {
                 return left < right;
             case '>':
                 return left > right;
-            case '==':
+            case '=':
                 return Math.abs(left - right) < 0.0001;
-            case '!=':
-                return Math.abs(left - right) > 0.0001;
             default:
                 return false;
         }

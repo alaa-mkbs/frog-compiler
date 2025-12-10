@@ -352,44 +352,42 @@ export default class Semantic {
     return exp.substring(start + 1, end).trim();
   }
 
-  private evaluateCondition(condition: string, line: number): boolean {
-    const operators = ['<=', '>=', '<', '>', '==', '!='];
-    let operator = '';
-    let parts: string[] = [];
+private evaluateCondition(condition: string, line: number): boolean {
+  const operators = ['<=', '>=', '<', '>', '='];
+  let operator = '';
+  let parts: string[] = [];
 
-    for (const op of operators) {
-      if (condition.includes(op)) {
-        operator = op;
-        parts = condition.split(op).map((p) => p.trim());
-        break;
-      }
-    }
-
-    if (!operator || parts.length !== 2) {
-      this.errors.push({ line, error: `Invalid condition: ${condition}` });
-      return false;
-    }
-
-    const left = this.evaluateExpression(parts[0] ?? '', line);
-    const right = this.evaluateExpression(parts[1] ?? '', line);
-
-    switch (operator) {
-      case '<=':
-        return left <= right;
-      case '>=':
-        return left >= right;
-      case '<':
-        return left < right;
-      case '>':
-        return left > right;
-      case '==':
-        return Math.abs(left - right) < 0.0001;
-      case '!=':
-        return Math.abs(left - right) > 0.0001;
-      default:
-        return false;
+  for (const op of operators) {
+    if (condition.includes(op)) {
+      operator = op;
+      parts = condition.split(op).map((p) => p.trim());
+      break;
     }
   }
+
+  if (!operator || parts.length !== 2) {
+    this.errors.push({ line, error: `Invalid condition: ${condition}` });
+    return false;
+  }
+
+  const left = this.evaluateExpression(parts[0] ?? '', line);
+  const right = this.evaluateExpression(parts[1] ?? '', line);
+
+  switch (operator) {
+    case '<=':
+      return left <= right;
+    case '>=':
+      return left >= right;
+    case '<':
+      return left < right;
+    case '>':
+      return left > right;
+    case '=':
+      return Math.abs(left - right) < 0.0001;
+    default:
+      return false;
+  }
+}
 
   private evaluateExpression(expr: string, line: number): number {
     expr = expr.trim();

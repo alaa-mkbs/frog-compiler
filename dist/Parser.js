@@ -146,7 +146,7 @@ export default class Parser {
                 continue;
             if (i > 0 && ((_a = parses[i - 1]) === null || _a === void 0 ? void 0 : _a.exp.startsWith('If['))) {
                 if (prev.exp.includes(':=') || prev.exp.startsWith('FRG_Print')) {
-                    return true; // Orphan - Begin after completed If
+                    return true;
                 }
             }
             if (prev.exp === 'End') {
@@ -163,7 +163,7 @@ export default class Parser {
                             if (j > 0) {
                                 const before = parses[j - 1];
                                 if ((before === null || before === void 0 ? void 0 : before.exp.startsWith('If[')) || (before === null || before === void 0 ? void 0 : before.exp) === 'Else') {
-                                    return true; // Orphan - Begin after If/Else block completed
+                                    return true;
                                 }
                             }
                         }
@@ -236,14 +236,14 @@ export default class Parser {
                         exp: currentToken.value,
                         desc: 'Invalid token',
                         error: true,
-                        line: currentToken.line + 1,
+                        line: currentToken.line,
                     };
                 }
                 return {
                     exp: currentToken.value,
                     desc: 'Unexpected in this context',
                     error: true,
-                    line: currentToken.line + 1,
+                    line: currentToken.line,
                 };
         }
     }
@@ -253,8 +253,8 @@ export default class Parser {
         let exp = typeToken.value + ' ';
         this.nextToken();
         const reservedKeywords = ['FRG_Begin', 'FRG_End', 'Begin', 'End', 'If', 'Else', 'FRG_Int', 'FRG_Real', 'FRG_Print', 'Repeat', 'until'];
+        const currentToken = this.getCurrentToken();
         if (!this.isMyType(TokenType.ID)) {
-            const currentToken = this.getCurrentToken();
             if (reservedKeywords.includes(currentToken.value)) {
                 return {
                     exp: exp + currentToken.value,
@@ -280,12 +280,12 @@ export default class Parser {
             if (this.isMyType(TokenType.COMM)) {
                 exp += this.getCurrentToken().value + ' ';
                 this.nextToken();
+                const nextToken = this.getCurrentToken();
                 if (!this.isMyType(TokenType.ID)) {
-                    const currentToken = this.getCurrentToken();
-                    if (reservedKeywords.includes(currentToken.value)) {
+                    if (reservedKeywords.includes(nextToken.value)) {
                         return {
-                            exp: exp + currentToken.value,
-                            desc: `Cannot use reserved keyword '${currentToken.value}' as variable name`,
+                            exp: exp + nextToken.value,
+                            desc: `Cannot use reserved keyword '${nextToken.value}' as variable name`,
                             error: true,
                             line: declLine,
                         };
@@ -299,11 +299,11 @@ export default class Parser {
         }
         if (this.isMyType(TokenType.ENDINST)) {
             exp += ' ' + this.getCurrentToken().value;
+            this.nextToken();
         }
         else {
             return { exp: exp, desc: 'Expected "#" at end of declaration', error: true, line: declLine };
         }
-        this.nextToken();
         return {
             exp: exp,
             desc: typeToken.type === TokenType.INT ? 'Integer declaration' : 'Real declaration',
@@ -413,9 +413,9 @@ export default class Parser {
             return { exp: exp, desc: 'Expected identifier or number in condition', error: true, line: ifLine };
         }
         exp += left;
-        const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ];
+        const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ, TokenType.EQUAL];
         if (!comparisonOps.includes(this.getCurrentToken().type)) {
-            return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=)', error: true, line: ifLine };
+            return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=, =)', error: true, line: ifLine };
         }
         exp += this.getCurrentToken().value;
         this.nextToken();
@@ -450,9 +450,9 @@ export default class Parser {
             return { exp: exp, desc: 'Expected identifier or number in until condition', error: true, line: untilLine };
         }
         exp += left;
-        const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ];
+        const comparisonOps = [TokenType.LESSTHEN, TokenType.GREATERTHEN, TokenType.LESSEQ, TokenType.GREATEREQ, TokenType.EQUAL];
         if (!comparisonOps.includes(this.getCurrentToken().type)) {
-            return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=) in until condition', error: true, line: untilLine };
+            return { exp: exp, desc: 'Expected comparison operator (<, >, <=, >=, =) in until condition', error: true, line: untilLine };
         }
         exp += this.getCurrentToken().value;
         this.nextToken();

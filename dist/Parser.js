@@ -71,10 +71,17 @@ export default class Parser {
                 }
                 else {
                     blockStack.pop();
+                    // Check if this End closes an If/Else block
                     if (controlStack.length > 0) {
                         const lastControl = controlStack[controlStack.length - 1];
+                        // Only pop if it's an Else or if it's an If without an upcoming Else
                         if (lastControl && !lastControl.needsInstruction) {
-                            controlStack.pop();
+                            if (lastControl.type === 'Else') {
+                                controlStack.pop();
+                            }
+                            else if (lastControl.type === 'If' && !this.isElseNext()) {
+                                controlStack.pop();
+                            }
                         }
                     }
                 }
@@ -104,9 +111,8 @@ export default class Parser {
                     if (lastControl && lastControl.needsInstruction) {
                         lastControl.needsInstruction = false;
                         if (lastControl.type === 'If') {
-                            if (!this.isElseNext()) {
-                                controlStack.pop();
-                            }
+                            // Don't pop yet - wait to see if there's an Else
+                            // The pop will happen at End if no Else follows
                         }
                         else if (lastControl.type === 'Else') {
                             controlStack.pop();

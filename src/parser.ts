@@ -27,115 +27,120 @@ export default class Parser {
     return this.tokens[this.currentTokenIndex]?.type === type;
   }
 
-  public parseInput() {
-    let parses: Parse[] = [];
-    let parse: Parse;
-    let blockStack: { type: string; line: number }[] = [];
-    let controlStack: { type: 'If' | 'Else' | 'Repeat'; line: number; needsInstruction: boolean }[] = [];
+public parseInput() {
+  let parses: Parse[] = [];
+  let parse: Parse;
+  let blockStack: { type: string; line: number }[] = [];
+  let controlStack: { type: 'If' | 'Else' | 'Repeat'; line: number; needsInstruction: boolean }[] = [];
 
-    while (!this.isMyType(TokenType.ENDFILE)) {
-      parse = this.parseLine();
+  while (!this.isMyType(TokenType.ENDFILE)) {
+    parse = this.parseLine();
 
-      if (parse.exp.startsWith('If[')) {
-        controlStack.push({ type: 'If', line: parse.line, needsInstruction: true });
-      } else if (parse.exp === 'Else') {
-        let foundIf = false;
+    if (parse.exp.startsWith('If[')) {
+      controlStack.push({ type: 'If', line: parse.line, needsInstruction: true });
+    } else if (parse.exp === 'Else') {
+      let foundIf = false;
+      for (let i = controlStack.length - 1; i >= 0; i--) {
+        if (controlStack[i]?.type === 'If') {
+          foundIf = true;
+          controlStack.splice(i, 1);
+          controlStack.push({ type: 'Else', line: parse.line, needsInstruction: true });
+          break;
+        }
+      }
+
+      if (!foundIf) {
+        parse.error = true;
+        parse.desc = 'Else without matching If';
+      }
+    } else if (parse.exp === 'Begin') {
+      const lastControl = controlStack[controlStack.length - 1];
+
+      if (lastControl && lastControl.needsInstruction) {
+        lastControl.needsInstruction = false;
+        blockStack.push({ type: 'Begin', line: parse.line });
+      } else if (blockStack.some((b) => b.type === 'Repeat')) {
+        blockStack.push({ type: 'Begin', line: parse.line });
+      } else if (this.isOrphanContext(parses)) {
+        parse.error = true;
+        parse.desc = 'Unexpected Begin - not preceded by If, Else';
+      } else {
+        blockStack.push({ type: 'Begin', line: parse.line });
+      }
+    } else if (parse.exp === 'End') {
+      if (blockStack.length === 0 || blockStack[blockStack.length - 1]?.type !== 'Begin') {
+        parse.error = true;
+        parse.desc = 'End without matching Begin';
+      } else {
+        blockStack.pop();
+        // Check if this End closes an If/Else block
+        if (controlStack.length > 0) {
+          const lastControl = controlStack[controlStack.length - 1];
+          // Only pop if it's an Else or if it's an If without an upcoming Else
+          if (lastControl && !lastControl.needsInstruction) {
+            if (lastControl.type === 'Else') {
+              controlStack.pop();
+            } else if (lastControl.type === 'If' && !this.isElseNext()) {
+              controlStack.pop();
+            }
+          }
+        }
+      }
+    } else if (parse.exp === 'Repeat') {
+      blockStack.push({ type: 'Repeat', line: parse.line });
+      controlStack.push({ type: 'Repeat', line: parse.line, needsInstruction: true });
+    } else if (parse.exp.toLowerCase().startsWith('until')) {
+      if (blockStack.length === 0 || blockStack[blockStack.length - 1]?.type !== 'Repeat') {
+        parse.error = true;
+        parse.desc = 'Until without matching Repeat';
+      } else {
+        blockStack.pop();
         for (let i = controlStack.length - 1; i >= 0; i--) {
-          if (controlStack[i]?.type === 'If') {
-            foundIf = true;
+          if (controlStack[i]?.type === 'Repeat') {
             controlStack.splice(i, 1);
-            controlStack.push({ type: 'Else', line: parse.line, needsInstruction: true });
             break;
           }
         }
-
-        if (!foundIf) {
-          parse.error = true;
-          parse.desc = 'Else without matching If';
-        }
-      } else if (parse.exp === 'Begin') {
+      }
+    } else if (parse.exp !== 'FRG_Begin' && parse.exp !== 'FRG_End' && parse.exp.trim() !== '' && !parse.error) {
+      if (controlStack.length > 0) {
         const lastControl = controlStack[controlStack.length - 1];
-
         if (lastControl && lastControl.needsInstruction) {
           lastControl.needsInstruction = false;
-          blockStack.push({ type: 'Begin', line: parse.line });
-        } else if (blockStack.some((b) => b.type === 'Repeat')) {
-          blockStack.push({ type: 'Begin', line: parse.line });
-        } else if (this.isOrphanContext(parses)) {
-          parse.error = true;
-          parse.desc = 'Unexpected Begin - not preceded by If, Else';
-        } else {
-          blockStack.push({ type: 'Begin', line: parse.line });
-        }
-      } else if (parse.exp === 'End') {
-        if (blockStack.length === 0 || blockStack[blockStack.length - 1]?.type !== 'Begin') {
-          parse.error = true;
-          parse.desc = 'End without matching Begin';
-        } else {
-          blockStack.pop();
-          if (controlStack.length > 0) {
-            const lastControl = controlStack[controlStack.length - 1];
-            if (lastControl && !lastControl.needsInstruction) {
-              controlStack.pop();
-            }
-          }
-        }
-      } else if (parse.exp === 'Repeat') {
-        blockStack.push({ type: 'Repeat', line: parse.line });
-        controlStack.push({ type: 'Repeat', line: parse.line, needsInstruction: true });
-      } else if (parse.exp.toLowerCase().startsWith('until')) {
-        if (blockStack.length === 0 || blockStack[blockStack.length - 1]?.type !== 'Repeat') {
-          parse.error = true;
-          parse.desc = 'Until without matching Repeat';
-        } else {
-          blockStack.pop();
-          for (let i = controlStack.length - 1; i >= 0; i--) {
-            if (controlStack[i]?.type === 'Repeat') {
-              controlStack.splice(i, 1);
-              break;
-            }
-          }
-        }
-      } else if (parse.exp !== 'FRG_Begin' && parse.exp !== 'FRG_End' && parse.exp.trim() !== '' && !parse.error) {
-        if (controlStack.length > 0) {
-          const lastControl = controlStack[controlStack.length - 1];
-          if (lastControl && lastControl.needsInstruction) {
-            lastControl.needsInstruction = false;
 
-            if (lastControl.type === 'If') {
-              if (!this.isElseNext()) {
-                controlStack.pop();
-              }
-            } else if (lastControl.type === 'Else') {
-              controlStack.pop();
-            }
+          if (lastControl.type === 'If') {
+            // Don't pop yet - wait to see if there's an Else
+            // The pop will happen at End if no Else follows
+          } else if (lastControl.type === 'Else') {
+            controlStack.pop();
           }
         }
       }
-
-      parses.push(parse);
     }
 
-    for (const unclosed of blockStack) {
-      if (unclosed.type === 'Begin') {
-        parses.push({
-          exp: '',
-          desc: `Unclosed Begin block at line ${unclosed.line}`,
-          error: true,
-          line: unclosed.line,
-        });
-      } else if (unclosed.type === 'Repeat') {
-        parses.push({
-          exp: '',
-          desc: `Repeat without matching Until at line ${unclosed.line}`,
-          error: true,
-          line: unclosed.line,
-        });
-      }
-    }
-
-    return parses;
+    parses.push(parse);
   }
+
+  for (const unclosed of blockStack) {
+    if (unclosed.type === 'Begin') {
+      parses.push({
+        exp: '',
+        desc: `Unclosed Begin block at line ${unclosed.line}`,
+        error: true,
+        line: unclosed.line,
+      });
+    } else if (unclosed.type === 'Repeat') {
+      parses.push({
+        exp: '',
+        desc: `Repeat without matching Until at line ${unclosed.line}`,
+        error: true,
+        line: unclosed.line,
+      });
+    }
+  }
+
+  return parses;
+}
 
   private isOrphanContext(parses: Parse[]): boolean {
     if (parses.length === 0) return false;
